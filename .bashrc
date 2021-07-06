@@ -1,106 +1,59 @@
-# Path to your oh-my-bash installation.
-export OSH=/home/mgebis/.oh-my-bash
+echo "start .bashrc"
+### Functions
+# https://superuser.com/questions/39751/add-directory-to-path-if-its-not-already-there
+pathprepend() {
+  for ((i=$#; i>0; i--)); 
+  do
+    ARG=${!i}
+    if [ -d "$ARG" ] && [[ ":$PATH:" != *":$ARG:"* ]]; then
+        PATH="$ARG${PATH:+":$PATH"}"
+    fi
+  done
+}
 
-# Set name of the theme to load. Optionally, if you set this to "random"
-# it'll load a random theme each time that oh-my-bash is loaded.
-OSH_THEME="font"
+# For rust:
+pathprepend $HOME/.cargo/bin
+echo "end .bashrc"
 
-# Uncomment the following line to use case-sensitive completion.
-# CASE_SENSITIVE="true"
+function do_windows {
+  # Windows native user and home directory. This is a long walk for a small drink of water.
+  export WINUSER=$(/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/powershell.exe /c "echo -n \$env:username")
+  export WINUSER=$(echo $WINUSER | sed -e 's/\r//g')
+  export WINHOME="/mnt/c/Users/$WINUSER"
 
-# Uncomment the following line to use hyphen-insensitive completion. Case
-# sensitive completion must be off. _ and - will be interchangeable.
-# HYPHEN_INSENSITIVE="true"
+  # Add "start" cmd to wsl2:
+  # https://superuser.com/questions/1182275/how-to-use-start-command-in-bash-on-windows
+  function start {
+    abspath=$(readlink -f "$1");
+    wpath=$(/bin/wslpath -w "$abspath");
+    powershell.exe -Command Start-Process "$wpath"
+  }
 
-# Uncomment the following line to disable bi-weekly auto-update checks.
-# DISABLE_AUTO_UPDATE="true"
+  # Pretty prompt
+  # https://www.hanselman.com/blog/how-to-make-a-pretty-prompt-in-windows-terminal-with-powerline-nerd-fonts-cascadia-code-wsl-and-ohmyposh
 
-# Uncomment the following line to change how often to auto-update (in days).
-# export UPDATE_OSH_DAYS=13
+  # Prerequisites: 
+  # sudo apt install golang-go
+  # go get -u github.com/justjanne/powerline-go
 
-# Uncomment the following line to disable colors in ls.
-# DISABLE_LS_COLORS="true"
+  # ALSO
+  # Need to install and use "CascadiaCodePL" font or things will look all wonky
+  # https://github.com/microsoft/cascadia-code
 
-# Uncomment the following line to disable auto-setting terminal title.
-# DISABLE_AUTO_TITLE="true"
+  GOPATH=$HOME/go
+  function _update_ps1() {
+      PS1="$($GOPATH/bin/powerline-go -error $?)"
+  }
+  if [ "$TERM" != "linux" ] && [ -f "$GOPATH/bin/powerline-go" ]; then
+      PROMPT_COMMAND="_update_ps1; $PROMPT_COMMAND"
+  fi
+}
 
-# Uncomment the following line to enable command auto-correction.
-# ENABLE_CORRECTION="true"
-
-# Uncomment the following line to display red dots whilst waiting for completion.
-# COMPLETION_WAITING_DOTS="true"
-
-# Uncomment the following line if you want to disable marking untracked files
-# under VCS as dirty. This makes repository status check for large repositories
-# much, much faster.
-# DISABLE_UNTRACKED_FILES_DIRTY="true"
-
-# Uncomment the following line if you want to change the command execution time
-# stamp shown in the history command output.
-# The optional three formats: "mm/dd/yyyy"|"dd.mm.yyyy"|"yyyy-mm-dd"
-# HIST_STAMPS="mm/dd/yyyy"
-
-# Would you like to use another custom folder than $OSH/custom?
-# OSH_CUSTOM=/path/to/new-custom-folder
-
-# Which completions would you like to load? (completions can be found in ~/.oh-my-bash/completions/*)
-# Custom completions may be added to ~/.oh-my-bash/custom/completions/
-# Example format: completions=(ssh git bundler gem pip pip3)
-# Add wisely, as too many completions slow down shell startup.
-completions=(
-  git
-  composer
-  ssh
-)
-
-# Which aliases would you like to load? (aliases can be found in ~/.oh-my-bash/aliases/*)
-# Custom aliases may be added to ~/.oh-my-bash/custom/aliases/
-# Example format: aliases=(vagrant composer git-avh)
-# Add wisely, as too many aliases slow down shell startup.
-aliases=(
-  general
-)
-
-# Which plugins would you like to load? (plugins can be found in ~/.oh-my-bash/plugins/*)
-# Custom plugins may be added to ~/.oh-my-bash/custom/plugins/
-# Example format: plugins=(rails git textmate ruby lighthouse)
-# Add wisely, as too many plugins slow down shell startup.
-plugins=(
-  git
-  bashmarks
-)
-
-source $OSH/oh-my-bash.sh
-
-# User configuration
-# export MANPATH="/usr/local/man:$MANPATH"
-
-# You may need to manually set your language environment
-# export LANG=en_US.UTF-8
-
-# Preferred editor for local and remote sessions
-# if [[ -n $SSH_CONNECTION ]]; then
-#   export EDITOR='vim'
-# else
-#   export EDITOR='mvim'
-# fi
-
-# Compilation flags
-# export ARCHFLAGS="-arch x86_64"
-
-# ssh
-# export SSH_KEY_PATH="~/.ssh/rsa_id"
-
-# Set personal aliases, overriding those provided by oh-my-bash libs,
-# plugins, and themes. Aliases can be placed here, though oh-my-bash
-# users are encouraged to define aliases within the OSH_CUSTOM folder.
-# For a full list of active aliases, run `alias`.
-#
-# Example aliases
-# alias bashconfig="mate ~/.bashrc"
-# alias ohmybash="mate ~/.oh-my-bash"
-
-# Add "start" cmd to wsl2:
-alias start='cmd.exe /c start'
-
-export PATH=/home/mgebis/.cargo/bin:$PATH
+# OS specifics
+# As per https://stackoverflow.com/questions/38086185/how-to-check-if-a-program-is-run-in-bash-on-ubuntu-on-windows-and-not-just-plain
+if grep -qEi "(Microsoft|WSL)" /proc/version &> /dev/null ; then
+    echo "Windows 10 Bash"
+    do_windows
+else
+    echo "Not Windows 10 Bash"
+fi
