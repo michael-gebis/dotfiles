@@ -49,6 +49,22 @@ function do_windows {
   fi
 }
 
+function do_linux {
+  #prerequisites
+  # sudo apt install golang-go
+  # go get -u github.com/justjanne/powerline-go
+
+  # ALSO: install fonts as per https://github.com/powerline/fonts
+  GOPATH=$HOME/go
+  function _update_ps1() {
+    eval "$($GOPATH/bin/powerline-go -error $? -shell bash -eval -modules-right git)"
+  }
+
+  if [ "$TERM" != "linux" ] && [ -f "$GOPATH/bin/powerline-go" ]; then
+    PROMPT_COMMAND="_update_ps1; $PROMPT_COMMAND"
+  fi
+}
+  
 # OS specifics
 # As per https://stackoverflow.com/questions/38086185/how-to-check-if-a-program-is-run-in-bash-on-ubuntu-on-windows-and-not-just-plain
 if grep -qEi "(Microsoft|WSL)" /proc/version &> /dev/null ; then
@@ -56,4 +72,5 @@ if grep -qEi "(Microsoft|WSL)" /proc/version &> /dev/null ; then
     do_windows
 else
     echo "Not Windows 10 Bash"
+    do_linux
 fi
