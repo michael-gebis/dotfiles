@@ -1,4 +1,4 @@
-#VERBOSE=true
+VERBOSE=true
 if [[ $VERBOSE ]] ; then echo "start .bashrc"; fi
 
 ### https://superuser.com/questions/39751/add-directory-to-path-if-its-not-already-there
@@ -88,12 +88,22 @@ else
     do_linux
 fi
 
-# rust:
+### Editor
+export VISUAL=vi
+export EDITOR="$VISUAL"
+
+### rust:
 pathprepend $HOME/.cargo/bin
 
-# kubernetes:
+### kubernetes:
 # https://www.atomiccommits.io/everything-useful-i-know-about-kubectl/
 alias k="kubectl"
 complete -F __start_kubectl k
+
+### Execute custom bash completions
+if [[ -f /etc/profile.d/bash_completion.sh ]]; then
+  if [[ $VERBOSE ]]; then echo "sourcing bash_completions..."; fi
+  . /etc/profile.d/bash_completion.sh
+fi
 
 if [[ $VERBOSE ]]; then echo "end .bashrc"; fi

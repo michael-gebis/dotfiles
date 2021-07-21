@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+if [[ $VERBOSE ]]; then echo "sourcing custom bash_completions..."; fi
+for bcfile in ~/.config/bash_completion.d/* ; do
+  if [[ $VERBOSE ]]; then echo "  sourcing $bcfile"; fi
+  . $bcfile
+done
+if [[ $VERBOSE ]]; then echo "done custom bash completions!"; fi
