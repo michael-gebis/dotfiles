@@ -3,8 +3,7 @@ if [[ $VERBOSE ]] ; then echo "start .bashrc"; fi
 
 ### https://superuser.com/questions/39751/add-directory-to-path-if-its-not-already-there
 pathprepend() {
-  for ((i=$#; i>0; i--)); 
-  do
+  for ((i=$#; i>0; i--)); do
     ARG=${!i}
     if [ -d "$ARG" ] && [[ ":$PATH:" != *":$ARG:"* ]]; then
         PATH="$ARG${PATH:+":$PATH"}"
