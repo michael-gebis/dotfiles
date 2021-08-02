@@ -1,10 +1,15 @@
-VERBOSE=true
+### Michael Gebis's .bashrc; https://github.com/michael-gebis/dotfiles
+### See LICENSE file for details (MIT License)
+### If any of my work helps you, let me know by tweeting @IvyMike
+
+if [ -f ~/.bashlog ]; then . ~/.bashlog; fi
+
 # Any login-specific stuff would go here
 # In this case, it's nothing
 ###
-if [[ $VERBOSE ]] ; then echo "start .bash_profile"; fi
+log "start .bash_profile"
 
 # Always run my .bashrc
 if [ -f ~/.bashrc ]; then . ~/.bashrc; fi
 
-if [[ $VERBOSE ]] ; then echo "end .bashrc_profile"; fi
+log "end .bash_profile"

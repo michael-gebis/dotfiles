@@ -1,8 +1,13 @@
-VERBOSE=true
-if [[ $VERBOSE ]] ; then echo "start .bashrc"; fi
+### Michael Gebis's .bashrc; https://github.com/michael-gebis/dotfiles
+### See LICENSE file for details (MIT License)
+### If any of my work helps you, let me know by tweeting @IvyMike
+
+if [ -f ~/.bashlog ]; then . ~/.bashlog; fi
+
+log "start .bashrc"
 
 ### https://superuser.com/questions/39751/add-directory-to-path-if-its-not-already-there
-pathprepend() {
+function pathprepend() {
   for ((i=$#; i>0; i--)); do
     ARG=${!i}
     if [ -d "$ARG" ] && [[ ":$PATH:" != *":$ARG:"* ]]; then
@@ -13,7 +18,7 @@ pathprepend() {
 
 ### As per https://github.com/justjanne/powerline-go
 function do_powerline {
-  if [[ $VERBOSE ]]; then echo "start do_powerline"; fi
+  log "start do_powerline"
   GOPATH=$HOME/go
   function _update_ps1() {
       # In addition to defaults:
@@ -28,12 +33,12 @@ function do_powerline {
   if [ "$TERM" != "linux" ] && [ -f "$GOPATH/bin/powerline-go" ]; then
       PROMPT_COMMAND="_update_ps1; $PROMPT_COMMAND"
   fi
-  if [[ $VERBOSE ]]; then echo "end do_powerline"; fi
+  log "end do_powerline"
 }
 
 ### WSL2 specific code
 function do_windows {
-  if [[ $VERBOSE ]]; then echo "start do_windows"; fi  
+  log "start do_windows"
 
   # Set Windows native user and home directory. 
   # This is a long walk for a small drink of water.
@@ -61,12 +66,12 @@ function do_windows {
   # https://github.com/microsoft/cascadia-code
 
   do_powerline
-  if [[ $VERBOSE ]]; then echo "end do_windows"; fi  
+  log "end do_windows"
 }
 
 ### Linux (non-WSL2) specific code:
 function do_linux {
-  if [[ $VERBOSE ]] ; then echo "start do_linux"; fi
+  log "start do_linux"
   # prerequisites for powerline on ubuntu:
   #   sudo apt install golang-go
   #   go get -u github.com/justjanne/powerline-go
@@ -74,16 +79,16 @@ function do_linux {
   # ALSO: install fonts as per https://github.com/powerline/fonts
   #   sudo apt-get install fonts-powerline
   do_powerline
-  if [[ $VERBOSE ]] ; then echo "end do_linux"; fi
+  log "end do_linux"
 }
   
 # OS specifics
 # As per https://stackoverflow.com/questions/38086185/how-to-check-if-a-program-is-run-in-bash-on-ubuntu-on-windows-and-not-just-plain
 if grep -qEi "(Microsoft|WSL)" /proc/version &> /dev/null ; then
-    if [[ $VERBOSE ]]; then echo "Windows 10 detected..."; fi
+    log "WSL detected..."
     do_windows
 else
-    if [[ $VERBOSE ]]; then echo "Linux detected..."; fi
+    log "Linux detected..."
     do_linux
 fi
 
@@ -100,9 +105,15 @@ alias k="kubectl"
 complete -F __start_kubectl k
 
 ### Execute custom bash completions
+### Depending on context, this may have already been done and
+### will be a no-op.
 if [[ -f /etc/profile.d/bash_completion.sh ]]; then
-  if [[ $VERBOSE ]]; then echo "sourcing bash_completions..."; fi
   . /etc/profile.d/bash_completion.sh
 fi
 
-if [[ $VERBOSE ]]; then echo "end .bashrc"; fi
+### Execute local bash configuration
+if [[ -f ~/.bashrc.local ]]; then
+  . ~/.bashrc.local
+fi
+
+log "end .bashrc"
