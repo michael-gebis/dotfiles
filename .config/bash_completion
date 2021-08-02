@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-if [ -f ~/.bashlog ]; then . ~/.bashlog; fi
+if [ -f ~/.bashlog ]; then . ~/.bashlog; else function log() { :; }; fi
 
 log "sourcing custom bash_completions..."
 for bcfile in ~/.config/bash_completion.d/* ; do

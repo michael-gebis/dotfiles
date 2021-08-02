@@ -2,7 +2,7 @@
 ### See LICENSE file for details (MIT License)
 ### If any of my work helps you, let me know by tweeting @IvyMike
 
-if [ -f ~/.bashlog ]; then . ~/.bashlog; fi
+if [ -f ~/.bashlog ]; then . ~/.bashlog; else function log() { :; }; fi
 
 log "start .bashrc"
 

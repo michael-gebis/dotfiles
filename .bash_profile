@@ -2,7 +2,7 @@
 ### See LICENSE file for details (MIT License)
 ### If any of my work helps you, let me know by tweeting @IvyMike
 
-if [ -f ~/.bashlog ]; then . ~/.bashlog; fi
+if [ -f ~/.bashlog ]; then . ~/.bashlog; else function log() { :; }; fi
 
 # Any login-specific stuff would go here
 # In this case, it's nothing
