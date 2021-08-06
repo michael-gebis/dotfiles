@@ -2,14 +2,14 @@
 ### See LICENSE file for details (MIT License)
 ### If any of my work helps you, let me know by tweeting @IvyMike
 
-if [ -f ~/.bashlog ]; then . ~/.bashlog; else function log() { :; }; fi
+if [ -f ~/.bashlog ]; then . ~/.bashlog; else function bashlog() { :; }; fi
 
 # Any login-specific stuff would go here
 # In this case, it's nothing
 ###
-log "start .bash_profile"
+bashlog "start .bash_profile"
 
 # Always run my .bashrc
 if [ -f ~/.bashrc ]; then . ~/.bashrc; fi
 
-log "end .bash_profile"
+bashlog "end .bash_profile"

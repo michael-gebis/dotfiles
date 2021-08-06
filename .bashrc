@@ -2,9 +2,9 @@
 ### See LICENSE file for details (MIT License)
 ### If any of my work helps you, let me know by tweeting @IvyMike
 
-if [ -f ~/.bashlog ]; then . ~/.bashlog; else function log() { :; }; fi
+if [ -f ~/.bashlog ]; then . ~/.bashlog; else function bashlog() { :; }; fi
 
-log "start .bashrc"
+bashlog "start .bashrc"
 
 ### https://superuser.com/questions/39751/add-directory-to-path-if-its-not-already-there
 function pathprepend() {
@@ -17,8 +17,9 @@ function pathprepend() {
 }
 
 ### As per https://github.com/justjanne/powerline-go
+### Also https://www.hanselman.com/blog/how-to-make-a-pretty-prompt-in-windows-terminal-with-powerline-nerd-fonts-cascadia-code-wsl-and-ohmyposh
 function do_powerline {
-  log "start do_powerline"
+  bashlog "start do_powerline"
   GOPATH=$HOME/go
   function _update_ps1() {
       # In addition to defaults:
@@ -33,12 +34,12 @@ function do_powerline {
   if [ "$TERM" != "linux" ] && [ -f "$GOPATH/bin/powerline-go" ]; then
       PROMPT_COMMAND="_update_ps1; $PROMPT_COMMAND"
   fi
-  log "end do_powerline"
+  bashlog "end do_powerline"
 }
 
 ### WSL2 specific code
 function do_windows {
-  log "start do_windows"
+  bashlog "start do_windows"
 
   # Set Windows native user and home directory. 
   # This is a long walk for a small drink of water.
@@ -54,66 +55,83 @@ function do_windows {
     powershell.exe -Command Start-Process "$wpath"
   }
 
-  # Pretty prompt
-  # https://www.hanselman.com/blog/how-to-make-a-pretty-prompt-in-windows-terminal-with-powerline-nerd-fonts-cascadia-code-wsl-and-ohmyposh
-
   # Prerequisites for powerline on WSL2: 
   #   sudo apt install golang-go
   #   go get -u github.com/justjanne/powerline-go
-
   # ALSO
   # Need to install and use "CascadiaCodePL" font or things will look all wonky
   # https://github.com/microsoft/cascadia-code
 
-  do_powerline
-  log "end do_windows"
+  # How to set Windows Terminal Starting Directory for WSL2:
+  # As of 2021: https://docs.microsoft.com/en-us/windows/terminal/troubleshooting
+  # or. https://goulet.dev/posts/how-to-set-windows-terminal-starting-directory/
+
+  bashlog "end do_windows"
 }
 
 ### Linux (non-WSL2) specific code:
 function do_linux {
-  log "start do_linux"
-  # prerequisites for powerline on ubuntu:
+  bashlog "start do_linux"
+
+  alias start="xdg-open"
+
+  # NOTE: prerequisites for powerline on ubuntu:
   #   sudo apt install golang-go
   #   go get -u github.com/justjanne/powerline-go
-
   # ALSO: install fonts as per https://github.com/powerline/fonts
   #   sudo apt-get install fonts-powerline
-  do_powerline
-  log "end do_linux"
+
+  bashlog "end do_linux"
 }
-  
-# OS specifics
-# As per https://stackoverflow.com/questions/38086185/how-to-check-if-a-program-is-run-in-bash-on-ubuntu-on-windows-and-not-just-plain
-if grep -qEi "(Microsoft|WSL)" /proc/version &> /dev/null ; then
-    log "WSL detected..."
-    do_windows
-else
-    log "Linux detected..."
-    do_linux
-fi
 
-### Editor
-export VISUAL=vi
-export EDITOR="$VISUAL"
+function bash_main {  
+  # OS specifics
+  # As per https://stackoverflow.com/questions/38086185/how-to-check-if-a-program-is-run-in-bash-on-ubuntu-on-windows-and-not-just-plain
+  if grep -qEi "(Microsoft|WSL)" /proc/version &> /dev/null ; then
+      bashlog "WSL detected..."
+      do_windows
+  else
+      bashlog "Linux detected..."
+      do_linux
+  fi
 
-### rust:
-pathprepend $HOME/.cargo/bin
+  ### Set up powerline
+  do_powerline
 
-### kubernetes:
-# https://www.atomiccommits.io/everything-useful-i-know-about-kubectl/
-alias k="kubectl"
-complete -F __start_kubectl k
+  ### editor settings
+  export VISUAL=vi
+  export EDITOR="$VISUAL"
 
-### Execute custom bash completions
-### Depending on context, this may have already been done and
-### will be a no-op.
-if [[ -f /etc/profile.d/bash_completion.sh ]]; then
-  . /etc/profile.d/bash_completion.sh
-fi
+  ### rust:
+  pathprepend $HOME/.cargo/bin
 
-### Execute local bash configuration
-if [[ -f ~/.bashrc.local ]]; then
-  . ~/.bashrc.local
-fi
+  ### kubernetes:
+  # https://www.atomiccommits.io/everything-useful-i-know-about-kubectl/
+  alias k="kubectl"
+  complete -F __start_kubectl k
 
-log "end .bashrc"
+  ### some generic aliases:
+  alias dir="ls -Fla"
+  alias mkae="make"
+  alias cd..="cd .."
+
+  ### Add custom bash completions.
+  ### Depending on context (login shell or not?), this may have 
+  ### already been done in which case this is a no-op.
+  if [[ -f /etc/profile.d/bash_completion.sh ]]; then
+    . /etc/profile.d/bash_completion.sh
+  fi
+
+  ### Execute local bash configuration.
+  if [[ -f ~/.bashrc.local ]]; then
+    . ~/.bashrc.local
+  fi
+}
+
+bash_main
+
+### Cleanup functions needed only during setup.
+### I wish there was a cleaner way to do this.
+unset -f pathprepend do_windows do_linux do_powerline
+
+bashlog "end .bashrc"

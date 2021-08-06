@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 VERBOSE=true
-function log {
+function bashlog {
   if [[ $VERBOSE ]] ; then 
     echo $(date -u "+%Y.%m.%d-%H:%M:%S.%N %Z") "$@"; 
   fi

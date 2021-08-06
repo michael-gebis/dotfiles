@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-if [ -f ~/.bashlog ]; then . ~/.bashlog; else function log() { :; }; fi
+if [ -f ~/.bashlog ]; then . ~/.bashlog; else function bashlog() { :; }; fi
 
-log "sourcing custom bash_completions..."
+bashlog "sourcing custom bash_completions..."
 for bcfile in ~/.config/bash_completion.d/* ; do
-  log "...sourcing $bcfile"
+  bashlog "...sourcing $bcfile"
   . $bcfile
 done
-log "done custom bash completions!"
+bashlog "done custom bash completions!"
