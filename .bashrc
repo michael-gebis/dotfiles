@@ -114,7 +114,8 @@ function bash_main {
   alias dir="ls -Fla"
   alias mkae="make"
   alias cd..="cd .."
-
+  alias ips="landscape-sysinfo --sysinfo-plugins=Network"
+  
   ### Add custom bash completions.
   ### Depending on context (login shell or not?), this may have 
   ### already been done in which case this is a no-op.
