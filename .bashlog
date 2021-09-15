@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 VERBOSE=true
 function bashlog {
+  # If not interactive, log nothing. (This is so that scp/sftp work)
+  if [[ $- != *i* ]] ; then
+    return
+  fi
+
+
   if [[ $VERBOSE ]] ; then 
     echo $(date -u "+%Y.%m.%d-%H:%M:%S.%N %Z") "$@"; 
   fi
