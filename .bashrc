@@ -111,6 +111,7 @@ function bash_main {
   complete -F __start_kubectl k
 
   ### some generic aliases:
+  alias ls="ls -F"
   alias dir="ls -Fla"
   alias mkae="make"
   alias cd..="cd .."
