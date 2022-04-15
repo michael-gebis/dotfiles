@@ -124,10 +124,14 @@ function bash_main {
     . /etc/profile.d/bash_completion.sh
   fi
 
+  # Start ssh-agent to cache password
+  eval $(ssh-agent)
+
   ### Execute local bash configuration.
   if [[ -f ~/.bashrc.local ]]; then
     . ~/.bashrc.local
   fi
+
 }
 
 bash_main
