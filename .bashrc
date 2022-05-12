@@ -41,7 +41,7 @@ function do_powerline {
 function do_windows {
   bashlog "start do_windows"
 
-  # Set Windows native user and home directory. 
+  # Set Windows native user and home directory.
   # This is a long walk for a small drink of water.
   export WINUSER=$(/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/powershell.exe /c "echo -n \$env:username")
   export WINUSER=$(echo $WINUSER | sed -e 's/\r//g')
@@ -65,6 +65,15 @@ function do_windows {
   # How to set Windows Terminal Starting Directory for WSL2:
   # As of 2021: https://docs.microsoft.com/en-us/windows/terminal/troubleshooting
   # or. https://goulet.dev/posts/how-to-set-windows-terminal-starting-directory/
+
+  # Since "shutdown" and "reboot" don't work on WSL (no init) these aliases
+  # are workarounds.
+  # https://stackoverflow.com/questions/66375364/shutdown-or-reboot-a-wsl-session-from-inside-the-wsl-session
+  alias shutdown='wsl.exe --terminate $WSL_DISTRO_NAME'
+  alias reboot='wsl.exe --terminate $WSL_DISTRO_NAME'
+  # This suggestion from SO attempts to restart another window, but it isn't reliable
+  # No point to reboot; next invocation of WSL will start it again anyways.
+  #alias reboot='cd /mnt/c/ && cmd.exe /c start "rebooting WSL" cmd /c "timeout 5 && wsl -d $WSL_DISTRO_NAME" && wsl.exe --terminate $WSL_DISTRO_NAME'
 
   bashlog "end do_windows"
 }
@@ -125,7 +134,8 @@ function bash_main {
   fi
 
   # Start ssh-agent to cache password
-  eval $(ssh-agent)
+  bashlog "starting ssh-agent..."
+  { eval $(ssh-agent); } &> /dev/null
 
   ### Execute local bash configuration.
   if [[ -f ~/.bashrc.local ]]; then
