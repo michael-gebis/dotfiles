@@ -8,6 +8,6 @@ function bashlog {
 
 
   if [[ $VERBOSE ]] ; then 
-    echo $(date -u "+%Y.%m.%d-%H:%M:%S.%N %Z") "$@"; 
+    echo $(date -u "+%Y.%m.%d-%H:%M:%S.%2N %Z") "$@";
   fi
 }

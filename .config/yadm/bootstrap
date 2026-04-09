@@ -1,0 +1,30 @@
+#!/bin/bash
+### yadm bootstrap: sets up a new machine via Ansible
+set -eu
+
+echo "=== yadm bootstrap ==="
+
+# Install Ansible if not present
+if ! command -v ansible-playbook &> /dev/null; then
+    echo "Installing Ansible..."
+    sudo apt update
+    sudo apt install -y ansible
+fi
+
+# Ensure community.general collection is available (for snap module)
+if ! ansible-galaxy collection list community.general &> /dev/null; then
+    echo "Installing Ansible community.general collection..."
+    ansible-galaxy collection install community.general
+fi
+
+# Run the main setup playbook
+PLAYBOOK="$HOME/.config/ansible/setup.yml"
+if [[ -f "$PLAYBOOK" ]]; then
+    echo "Running Ansible setup..."
+    ansible-playbook "$PLAYBOOK" --ask-become-pass
+else
+    echo "ERROR: Playbook not found at $PLAYBOOK"
+    exit 1
+fi
+
+echo "=== Bootstrap complete ==="

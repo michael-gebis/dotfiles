@@ -1,0 +1,248 @@
+---
+### Generic Ubuntu workstation setup (tracked by yadm)
+### Org-specific tasks go in local.yml (not tracked)
+- name: Setup Ubuntu workstation
+  hosts: localhost
+  connection: local
+  become: true
+
+  vars:
+    ubuntu_release: "{{ ansible_distribution_release }}"
+    user_home: "{{ lookup('env', 'HOME') }}"
+
+    apt_packages:
+      # Terminal & shell
+      - fonts-powerline
+      - ghostty
+      - mc
+      - tmux
+
+      # Editors & diff
+      - meld
+      - vim
+
+      # Version control
+      - git
+      - gitk
+      - yadm
+
+      # Search & navigation
+      - cscope
+      - fd-find
+      - ripgrep
+      - silversearcher-ag
+      - universal-ctags
+
+      # Languages & build tools
+      - cloc
+      - golang-go
+      - maven
+      - meson
+      - npm
+      - python3-pip
+      - python3-venv
+      - python-is-python3
+
+      # Dev libraries (VS Code native extension builds)
+      - libfontconfig-dev
+      - libsecret-1-dev
+      - libx11-dev
+      - libxkbfile-dev
+
+      # Docker
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-ce
+      - docker-ce-cli
+      - docker-compose-plugin
+
+      # Desktop apps
+      - code
+      - flameshot
+      - google-chrome-stable
+      - inkscape
+      - okular
+      - typora
+      - wireshark
+
+      # Networking
+      - net-tools
+      - openssh-server
+      - socat
+      - sshfs
+      - tailscale
+
+      # Compression & archive
+      - lz4
+      - lziprecover
+      - lzop
+      - p7zip-full
+      - zstd
+
+      # Utilities
+      - ca-certificates
+      - cmdtest
+      - curl
+      - gnupg
+      - graphviz
+      - ncdu
+      - qpdf
+      - restic
+
+    snap_packages:
+      - pdftk
+
+  tasks:
+    ### -------------------------------------------------------
+    ### Third-party APT repositories
+    ### -------------------------------------------------------
+
+    - name: Ensure apt keyrings directory exists
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    # Docker
+    - name: Add Docker GPG key
+      ansible.builtin.get_url:
+        url: "https://download.docker.com/linux/ubuntu/gpg"
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+
+    - name: Add Docker repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc]
+          https://download.docker.com/linux/ubuntu {{ ubuntu_release }} stable
+        filename: docker
+
+    # Tailscale
+    - name: Add Tailscale GPG key
+      ansible.builtin.get_url:
+        url: "https://pkgs.tailscale.com/stable/ubuntu/{{ ubuntu_release }}.noarmor.gpg"
+        dest: /usr/share/keyrings/tailscale-archive-keyring.gpg
+        mode: "0644"
+
+    - name: Add Tailscale repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg]
+          https://pkgs.tailscale.com/stable/ubuntu {{ ubuntu_release }} main
+        filename: tailscale
+
+    # Typora
+    - name: Add Typora GPG key
+      ansible.builtin.shell: |
+        curl -fsSL https://typora.io/linux/public-key.asc \
+          | gpg --dearmor -o /etc/apt/keyrings/typora.gpg
+      args:
+        creates: /etc/apt/keyrings/typora.gpg
+
+    - name: Add Typora repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/typora.gpg] https://downloads.typora.io/linux ./"
+        filename: typora
+
+    # Ghostty (PPA)
+    - name: Add Ghostty PPA
+      ansible.builtin.apt_repository:
+        repo: "ppa:mkasberg/ghostty-ubuntu"
+
+    # VS Code (Microsoft)
+    - name: Add Microsoft GPG key
+      ansible.builtin.shell: |
+        curl -fsSL https://packages.microsoft.com/keys/microsoft.asc \
+          | gpg --dearmor -o /usr/share/keyrings/microsoft.gpg
+      args:
+        creates: /usr/share/keyrings/microsoft.gpg
+
+    - name: Add VS Code repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg]
+          https://packages.microsoft.com/repos/code stable main
+        filename: vscode
+
+    # Google Chrome
+    - name: Add Google Chrome GPG key
+      ansible.builtin.shell: |
+        curl -fsSL https://dl.google.com/linux/linux_signing_key.pub \
+          | gpg --dearmor -o /etc/apt/keyrings/google-chrome.gpg
+      args:
+        creates: /etc/apt/keyrings/google-chrome.gpg
+
+    - name: Add Google Chrome repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.gpg]
+          https://dl.google.com/linux/chrome/deb/ stable main
+        filename: google-chrome
+
+    ### -------------------------------------------------------
+    ### Package installation
+    ### -------------------------------------------------------
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install apt packages
+      ansible.builtin.apt:
+        name: "{{ apt_packages }}"
+        state: present
+
+    - name: Install snap packages
+      community.general.snap:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ snap_packages }}"
+
+    ### -------------------------------------------------------
+    ### User-level tools (no sudo)
+    ### -------------------------------------------------------
+
+    - name: Install powerline-go
+      become: false
+      ansible.builtin.shell: |
+        go install github.com/justjanne/powerline-go@latest
+      args:
+        creates: "{{ user_home }}/go/bin/powerline-go"
+      environment:
+        GOPATH: "{{ user_home }}/go"
+        PATH: "/usr/local/go/bin:/usr/bin:/bin"
+
+    - name: Install atuin
+      become: false
+      ansible.builtin.shell: |
+        curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh
+      args:
+        creates: "{{ user_home }}/.atuin/bin/atuin"
+
+    - name: Install nvm
+      become: false
+      ansible.builtin.shell: |
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/HEAD/install.sh | bash
+      args:
+        creates: "{{ user_home }}/.nvm/nvm.sh"
+
+    - name: Install SDKMAN
+      become: false
+      ansible.builtin.shell: |
+        curl -s "https://get.sdkman.io" | bash
+      args:
+        creates: "{{ user_home }}/.sdkman/bin/sdkman-init.sh"
+
+    ### -------------------------------------------------------
+    ### Local/org-specific tasks (if present)
+    ### -------------------------------------------------------
+
+    - name: Check for local tasks
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/local.yml"
+      register: local_tasks_file
+
+    - name: Include local tasks
+      ansible.builtin.include_tasks: local.yml
+      when: local_tasks_file.stat.exists

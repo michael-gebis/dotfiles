@@ -3,7 +3,8 @@ if [ -f ~/.bashlog ]; then . ~/.bashlog; else function bashlog() { :; }; fi
 
 bashlog "sourcing custom bash_completions..."
 for bcfile in ~/.config/bash_completion.d/* ; do
+  [ -f "$bcfile" ] || continue
   bashlog "...sourcing $bcfile"
-  . $bcfile
+  . "$bcfile"
 done
 bashlog "done custom bash completions!"

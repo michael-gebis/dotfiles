@@ -57,7 +57,7 @@ function do_windows {
 
   # Prerequisites for powerline on WSL2:
   #   sudo apt install golang-go
-  #   go get -u github.com/justjanne/powerline-go
+  #   go install github.com/justjanne/powerline-go@latest
   # ALSO
   # Need to install and use "CascadiaCodePL" font or things will look all wonky
   # https://github.com/microsoft/cascadia-code
@@ -86,7 +86,7 @@ function do_linux {
 
   # NOTE: prerequisites for powerline on ubuntu:
   #   sudo apt install golang-go
-  #   go get -u github.com/justjanne/powerline-go
+  #   go install github.com/justjanne/powerline-go@latest
   # ALSO: install fonts as per https://github.com/powerline/fonts
   #   sudo apt-get install fonts-powerline
 
@@ -119,8 +119,10 @@ function bash_main {
 
   ### kubernetes:
   # https://www.atomiccommits.io/everything-useful-i-know-about-kubectl/
-  alias k="kubectl"
-  complete -F __start_kubectl k
+  if command -v kubectl &> /dev/null; then
+    alias k="kubectl"
+    complete -F __start_kubectl k
+  fi
 
   ### some generic aliases:
   alias ls="ls -F"
@@ -148,9 +150,11 @@ function bash_main {
     eval "$(atuin init bash)"
   fi
 
-  # Start ssh-agent to cache password
-  bashlog "starting ssh-agent..."
-  { eval $(ssh-agent); } &> /dev/null
+  # Reuse existing ssh-agent (e.g. from GNOME keyring) or start a new one
+  if [ -z "$SSH_AUTH_SOCK" ] || [ ! -S "$SSH_AUTH_SOCK" ]; then
+    bashlog "starting ssh-agent..."
+    { eval $(ssh-agent); } &> /dev/null
+  fi
 
   ### sdkman (must be near end of bash_main):
   export SDKMAN_DIR="$HOME/.sdkman"
@@ -167,7 +171,7 @@ bash_main
 
 ### Cleanup functions needed only during setup.
 ### I wish there was a cleaner way to do this.
-unset -f pathprepend do_windows do_linux do_powerline
+unset -f pathprepend do_windows do_linux do_powerline bash_main
 
 ### ssh wrapper: color-codes terminal background by host.
 ### Reads host-to-color mappings from ~/.config/ssh-terminal-colors
