@@ -55,7 +55,7 @@ function do_windows {
     powershell.exe -Command Start-Process "$wpath"
   }
 
-  # Prerequisites for powerline on WSL2: 
+  # Prerequisites for powerline on WSL2:
   #   sudo apt install golang-go
   #   go get -u github.com/justjanne/powerline-go
   # ALSO
@@ -93,7 +93,7 @@ function do_linux {
   bashlog "end do_linux"
 }
 
-function bash_main {  
+function bash_main {
   # OS specifics
   # As per https://stackoverflow.com/questions/38086185/how-to-check-if-a-program-is-run-in-bash-on-ubuntu-on-windows-and-not-just-plain
   if grep -qEi "(Microsoft|WSL)" /proc/version &> /dev/null ; then
@@ -114,6 +114,9 @@ function bash_main {
   ### rust:
   pathprepend $HOME/.cargo/bin
 
+  ### local bin:
+  pathprepend $HOME/.local/bin
+
   ### kubernetes:
   # https://www.atomiccommits.io/everything-useful-i-know-about-kubectl/
   alias k="kubectl"
@@ -125,17 +128,33 @@ function bash_main {
   alias mkae="make"
   alias cd..="cd .."
   alias ips="landscape-sysinfo --sysinfo-plugins=Network"
-  
+
   ### Add custom bash completions.
-  ### Depending on context (login shell or not?), this may have 
+  ### Depending on context (login shell or not?), this may have
   ### already been done in which case this is a no-op.
   if [[ -f /etc/profile.d/bash_completion.sh ]]; then
     . /etc/profile.d/bash_completion.sh
   fi
 
+  ### nvm:
+  export NVM_DIR="$HOME/.nvm"
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+  [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+  ### atuin (shell history):
+  if [[ -f "$HOME/.atuin/bin/env" ]]; then
+    . "$HOME/.atuin/bin/env"
+    [[ -f ~/.bash-preexec.sh ]] && source ~/.bash-preexec.sh
+    eval "$(atuin init bash)"
+  fi
+
   # Start ssh-agent to cache password
   bashlog "starting ssh-agent..."
   { eval $(ssh-agent); } &> /dev/null
+
+  ### sdkman (must be near end of bash_main):
+  export SDKMAN_DIR="$HOME/.sdkman"
+  [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
 
   ### Execute local bash configuration.
   if [[ -f ~/.bashrc.local ]]; then
@@ -149,5 +168,28 @@ bash_main
 ### Cleanup functions needed only during setup.
 ### I wish there was a cleaner way to do this.
 unset -f pathprepend do_windows do_linux do_powerline
+
+### ssh wrapper: color-codes terminal background by host.
+### Reads host-to-color mappings from ~/.config/ssh-terminal-colors
+### Format: one entry per line, glob_pattern followed by hex_color
+### e.g.:  *prod*  #3b0a0a
+ssh() {
+    local color=""
+    local default_color="#1a1b26"
+    local config="$HOME/.config/ssh-terminal-colors"
+
+    if [[ -f "$config" ]]; then
+        while read -r pattern hex; do
+            [[ -z "$pattern" || "$pattern" == \#* ]] && continue
+            case "$*" in
+                $pattern) color="$hex"; break ;;
+            esac
+        done < "$config"
+    fi
+
+    printf "\033]11;%s\007" "${color:-$default_color}"
+    command ssh "$@"
+    printf "\033]111\007" # Reset
+}
 
 bashlog "end .bashrc"
