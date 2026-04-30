@@ -143,13 +143,6 @@ function bash_main {
   [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
   [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 
-  ### atuin (shell history):
-  if [[ -f "$HOME/.atuin/bin/env" ]]; then
-    . "$HOME/.atuin/bin/env"
-    [[ -f ~/.bash-preexec.sh ]] && source ~/.bash-preexec.sh
-    eval "$(atuin init bash)"
-  fi
-
   # Reuse existing ssh-agent (e.g. from GNOME keyring) or start a new one
   if [ -z "$SSH_AUTH_SOCK" ] || [ ! -S "$SSH_AUTH_SOCK" ]; then
     bashlog "starting ssh-agent..."
@@ -168,6 +161,19 @@ function bash_main {
 }
 
 bash_main
+
+### atuin (shell history):
+### IMPORTANT: must be sourced at top-level, NOT inside a function.
+### bash-preexec.sh uses `declare -a precmd_functions` / `preexec_functions`,
+### and `declare` inside a function creates LOCAL arrays that vanish when the
+### function returns -- which silently breaks atuin's command recording.
+### Symptoms: Ctrl-R still works (older history readable), but new commands
+### are not saved. ATUIN_SESSION is set but preexec_functions is unset.
+if [[ -f "$HOME/.atuin/bin/env" ]]; then
+  . "$HOME/.atuin/bin/env"
+  [[ -f ~/.bash-preexec.sh ]] && source ~/.bash-preexec.sh
+  eval "$(atuin init bash)"
+fi
 
 ### Cleanup functions needed only during setup.
 ### I wish there was a cleaner way to do this.
