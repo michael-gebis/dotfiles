@@ -25,7 +25,10 @@ function do_powerline {
       # In addition to defaults:
       #   displays error status
       #   displays count of background jobs.
-      PS1="$($GOPATH/bin/powerline-go -error $? -jobs $(jobs -p | wc -l))"
+      # Plain `jobs -p` includes Done-but-not-yet-reaped entries, causing
+      # phantom counts at prompt time. `-r` (running) and `-s` (stopped)
+      # filter those out, but bash doesn't OR them, so we sum two calls.
+      PS1="$($GOPATH/bin/powerline-go -error $? -jobs $(( $(jobs -rp | wc -l) + $(jobs -sp | wc -l) )))"
 
       # Clears errors after displaying them once
       # set "?"
