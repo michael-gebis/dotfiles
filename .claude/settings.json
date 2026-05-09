@@ -3,6 +3,8 @@
     "type": "command",
     "command": "bash ~/.claude/statusline-command.sh"
   },
-  "effortLevel": "high",
+  "env": {
+    "CLAUDE_CODE_EFFORT_LEVEL": "max"
+  },
   "skipAutoPermissionPrompt": true
 }
