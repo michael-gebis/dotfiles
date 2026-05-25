@@ -82,7 +82,6 @@
 
       # Utilities
       - ca-certificates
-      - cmdtest
       - curl
       - gnupg
       - graphviz
