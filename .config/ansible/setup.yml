@@ -145,9 +145,18 @@
         filename: typora
 
     # Ghostty (PPA)
-    - name: Add Ghostty PPA
+    - name: Add Ghostty PPA GPG key
+      ansible.builtin.get_url:
+        url: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x0721FDF5FECB88DC6920361657C8EF455CEAE491"
+        dest: /etc/apt/keyrings/ghostty.asc
+        mode: "0644"
+
+    - name: Add Ghostty PPA repository
       ansible.builtin.apt_repository:
-        repo: "ppa:mkasberg/ghostty-ubuntu"
+        repo: >-
+          deb [signed-by=/etc/apt/keyrings/ghostty.asc]
+          https://ppa.launchpadcontent.net/mkasberg/ghostty-ubuntu/ubuntu {{ ubuntu_release }} main
+        filename: ghostty
 
     # VS Code (Microsoft)
     - name: Add Microsoft GPG key
