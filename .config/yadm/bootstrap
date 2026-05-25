@@ -27,7 +27,7 @@ if [[ -f "$PLAYBOOK" ]]; then
     sudoers_tmp="/etc/sudoers.d/99-yadm-bootstrap-$USER"
     echo "$USER ALL=(ALL) NOPASSWD: ALL" | sudo tee "$sudoers_tmp" >/dev/null
     trap 'sudo rm -f "$sudoers_tmp"' EXIT
-    ansible-playbook "$PLAYBOOK"
+    ansible-playbook -i localhost, "$PLAYBOOK"
 else
     echo "ERROR: Playbook not found at $PLAYBOOK"
     exit 1
