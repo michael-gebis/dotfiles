@@ -21,7 +21,13 @@ fi
 PLAYBOOK="$HOME/.config/ansible/setup.yml"
 if [[ -f "$PLAYBOOK" ]]; then
     echo "Running Ansible setup..."
-    ansible-playbook "$PLAYBOOK" --ask-become-pass
+    # Cache sudo creds and refresh in background. Playbook uses become_flags=-n
+    # so Ansible never prompts -- sidesteps sudo-rs prompt-format issues.
+    sudo -v
+    ( while true; do sudo -n true; sleep 60; kill -0 "$$" 2>/dev/null || exit; done ) &
+    sudo_keeper=$!
+    trap 'kill "$sudo_keeper" 2>/dev/null || true' EXIT
+    ansible-playbook "$PLAYBOOK"
 else
     echo "ERROR: Playbook not found at $PLAYBOOK"
     exit 1

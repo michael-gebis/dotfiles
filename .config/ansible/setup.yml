@@ -5,6 +5,7 @@
   hosts: localhost
   connection: local
   become: true
+  become_flags: '-n -H'
 
   vars:
     ubuntu_release: "{{ ansible_distribution_release }}"
