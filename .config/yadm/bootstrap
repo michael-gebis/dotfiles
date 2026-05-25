@@ -21,12 +21,12 @@ fi
 PLAYBOOK="$HOME/.config/ansible/setup.yml"
 if [[ -f "$PLAYBOOK" ]]; then
     echo "Running Ansible setup..."
-    # Cache sudo creds and refresh in background. Playbook uses become_flags=-n
-    # so Ansible never prompts -- sidesteps sudo-rs prompt-format issues.
-    sudo -v
-    ( while true; do sudo -n true; sleep 60; kill -0 "$$" 2>/dev/null || exit; done ) &
-    sudo_keeper=$!
-    trap 'kill "$sudo_keeper" 2>/dev/null || true' EXIT
+    # sudo-rs (Ubuntu 26.04+ default) doesn't reliably honor cached creds for
+    # Ansible's pipe-based become. Grant temporary NOPASSWD for the duration
+    # of this bootstrap; trap removes the file on any exit (success, failure, ^C).
+    sudoers_tmp="/etc/sudoers.d/99-yadm-bootstrap-$USER"
+    echo "$USER ALL=(ALL) NOPASSWD: ALL" | sudo tee "$sudoers_tmp" >/dev/null
+    trap 'sudo rm -f "$sudoers_tmp"' EXIT
     ansible-playbook "$PLAYBOOK"
 else
     echo "ERROR: Playbook not found at $PLAYBOOK"
