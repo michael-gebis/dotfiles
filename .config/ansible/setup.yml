@@ -134,15 +134,14 @@
 
     # Typora
     - name: Add Typora GPG key
-      ansible.builtin.shell: |
-        curl -fsSL https://typora.io/linux/public-key.asc \
-          | gpg --dearmor -o /etc/apt/keyrings/typora.gpg
-      args:
-        creates: /etc/apt/keyrings/typora.gpg
+      ansible.builtin.get_url:
+        url: https://typora.io/linux/public-key.asc
+        dest: /etc/apt/keyrings/typora.asc
+        mode: "0644"
 
     - name: Add Typora repository
       ansible.builtin.apt_repository:
-        repo: "deb [signed-by=/etc/apt/keyrings/typora.gpg] https://downloads.typora.io/linux ./"
+        repo: "deb [signed-by=/etc/apt/keyrings/typora.asc] https://downloads.typora.io/linux ./"
         filename: typora
 
     # Ghostty (PPA)
@@ -152,31 +151,29 @@
 
     # VS Code (Microsoft)
     - name: Add Microsoft GPG key
-      ansible.builtin.shell: |
-        curl -fsSL https://packages.microsoft.com/keys/microsoft.asc \
-          | gpg --dearmor -o /usr/share/keyrings/microsoft.gpg
-      args:
-        creates: /usr/share/keyrings/microsoft.gpg
+      ansible.builtin.get_url:
+        url: https://packages.microsoft.com/keys/microsoft.asc
+        dest: /usr/share/keyrings/microsoft.asc
+        mode: "0644"
 
     - name: Add VS Code repository
       ansible.builtin.apt_repository:
         repo: >-
-          deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg]
+          deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.asc]
           https://packages.microsoft.com/repos/code stable main
         filename: vscode
 
     # Google Chrome
     - name: Add Google Chrome GPG key
-      ansible.builtin.shell: |
-        curl -fsSL https://dl.google.com/linux/linux_signing_key.pub \
-          | gpg --dearmor -o /etc/apt/keyrings/google-chrome.gpg
-      args:
-        creates: /etc/apt/keyrings/google-chrome.gpg
+      ansible.builtin.get_url:
+        url: https://dl.google.com/linux/linux_signing_key.pub
+        dest: /etc/apt/keyrings/google-chrome.asc
+        mode: "0644"
 
     - name: Add Google Chrome repository
       ansible.builtin.apt_repository:
         repo: >-
-          deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.gpg]
+          deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.asc]
           https://dl.google.com/linux/chrome/deb/ stable main
         filename: google-chrome
 
