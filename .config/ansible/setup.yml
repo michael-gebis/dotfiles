@@ -8,6 +8,7 @@
   become_flags: '-n -H'
 
   vars:
+    ansible_python_interpreter: /usr/bin/python3
     ubuntu_release: "{{ ansible_facts['distribution_release'] }}"
     user_home: "{{ lookup('env', 'HOME') }}"
 
