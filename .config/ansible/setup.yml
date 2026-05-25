@@ -8,7 +8,7 @@
   become_flags: '-n -H'
 
   vars:
-    ubuntu_release: "{{ ansible_distribution_release }}"
+    ubuntu_release: "{{ ansible_facts['distribution_release'] }}"
     user_home: "{{ lookup('env', 'HOME') }}"
 
     apt_packages:
