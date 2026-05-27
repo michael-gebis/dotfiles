@@ -79,6 +79,7 @@
       - lziprecover
       - lzop
       - p7zip-full
+      - unar
       - zstd
 
       # Utilities
@@ -87,6 +88,7 @@
       - gnupg
       - graphviz
       - ncdu
+      - pandoc
       - qpdf
       - restic
 
@@ -226,6 +228,13 @@
         curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh
       args:
         creates: "{{ user_home }}/.atuin/bin/atuin"
+
+    - name: Install uv
+      become: false
+      ansible.builtin.shell: |
+        curl --proto '=https' --tlsv1.2 -LsSf https://astral.sh/uv/install.sh | sh
+      args:
+        creates: "{{ user_home }}/.local/bin/uv"
 
     - name: Install nvm
       become: false
