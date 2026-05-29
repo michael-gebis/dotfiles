@@ -20,6 +20,22 @@ _setup_pathprepend() {
   done
 }
 
+### --- Environment for ALL shells (must precede the interactive guard) ------
+### PATH and core env vars are set here so non-interactive shells -- e.g.
+### `bash -lc '...'` -- and their children still get them. Everything below
+### the guard is interactive-only (prompt, aliases, completion, ssh-agent, ...).
+export VISUAL=vi
+export EDITOR="$VISUAL"
+_setup_pathprepend "$HOME/.cargo/bin"   # rust
+_setup_pathprepend "$HOME/.local/bin"   # user-local bin
+
+### Stop here for non-interactive shells. `return` is valid because .bashrc is
+### always *sourced* (by .bash_profile for login shells, or directly otherwise).
+case $- in
+  *i*) ;;        # interactive: keep going
+  *)   return ;; # non-interactive: nothing below is useful
+esac
+
 ### As per https://github.com/justjanne/powerline-go
 ### Also https://www.hanselman.com/blog/how-to-make-a-pretty-prompt-in-windows-terminal-with-powerline-nerd-fonts-cascadia-code-wsl-and-ohmyposh
 _setup_powerline() {
@@ -122,16 +138,6 @@ _setup_main() {
 
   ### Set up powerline
   _setup_powerline
-
-  ### editor settings
-  export VISUAL=vi
-  export EDITOR="$VISUAL"
-
-  ### rust:
-  _setup_pathprepend $HOME/.cargo/bin
-
-  ### local bin:
-  _setup_pathprepend $HOME/.local/bin
 
   ### kubernetes:
   # https://www.atomiccommits.io/everything-useful-i-know-about-kubectl/
