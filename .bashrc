@@ -54,9 +54,6 @@ _setup_powerline() {
       # phantom counts at prompt time. `-r` (running) and `-s` (stopped)
       # filter those out, but bash doesn't OR them, so we sum two calls.
       PS1="$("$_PL_GO_BIN" -error $? -jobs $(( $(jobs -rp | wc -l) + $(jobs -sp | wc -l) )))"
-
-      # Clears errors after displaying them once
-      # set "?"
   }
 
   if [ "$TERM" != "linux" ] && [ -f "$_PL_GO_BIN" ]; then
