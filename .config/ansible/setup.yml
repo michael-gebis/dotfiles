@@ -239,14 +239,14 @@
     - name: Install nvm
       become: false
       ansible.builtin.shell: |
-        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/HEAD/install.sh | bash
+        curl --proto '=https' --tlsv1.2 -o- https://raw.githubusercontent.com/nvm-sh/nvm/HEAD/install.sh | bash
       args:
         creates: "{{ user_home }}/.nvm/nvm.sh"
 
     - name: Install SDKMAN
       become: false
       ansible.builtin.shell: |
-        curl -s "https://get.sdkman.io" | bash
+        curl --proto '=https' --tlsv1.2 -s "https://get.sdkman.io" | bash
       args:
         creates: "{{ user_home }}/.sdkman/bin/sdkman-init.sh"
 
