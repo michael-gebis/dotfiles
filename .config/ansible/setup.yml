@@ -162,16 +162,23 @@
         filename: ghostty
 
     # VS Code (Microsoft)
-    - name: Add Microsoft GPG key
+    # The `code` package self-manages vscode.sources, which references
+    # /usr/share/keyrings/microsoft.gpg and is recreated on every upgrade. Install our
+    # key at that SAME path and point vscode.list at it, so the two repo definitions
+    # share a key — a harmless duplicate (cf. docker.list + docker.sources) rather than
+    # a fatal "Conflicting Signed-By" error. get_url leaves the key armored; apt reads
+    # key content, not the file extension, and staying on get_url avoids a gpg/curl
+    # dependency that isn't satisfied until the package-install step further down.
+    - name: Add Microsoft GPG key (at the path the code package expects)
       ansible.builtin.get_url:
         url: https://packages.microsoft.com/keys/microsoft.asc
-        dest: /usr/share/keyrings/microsoft.asc
+        dest: /usr/share/keyrings/microsoft.gpg
         mode: "0644"
 
     - name: Add VS Code repository
       ansible.builtin.apt_repository:
         repo: >-
-          deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.asc]
+          deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg]
           https://packages.microsoft.com/repos/code stable main
         filename: vscode
 

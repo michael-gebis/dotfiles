@@ -90,3 +90,51 @@ Or re-run the full bootstrap:
 ```bash
 yadm bootstrap
 ```
+
+## Troubleshooting apt repositories
+
+The third-party repo tasks use `ansible.builtin.apt_repository`, which **appends a new
+source line rather than replacing the old one** when a repo's signing key or URL changes.
+On a fresh machine that's invisible, but on a machine provisioned by an *earlier* version
+of the playbook the stale line lingers beside the new one — and if the two disagree on the
+key, apt refuses to read its sources at all, so the playbook dies on an "Add … repository"
+task (or `sudo apt-get update` errors):
+
+```
+E: Conflicting values set for option Signed-By regarding source
+   https://packages.microsoft.com/repos/code/ stable:
+   /usr/share/keyrings/microsoft.asc != /usr/share/keyrings/microsoft.gpg
+E: The list of sources could not be read.
+```
+
+Fix it by deleting the **stale** entry, then re-checking:
+
+```bash
+# show every configured repo and which key each entry uses
+grep -rn 'signed-by\|Signed-By' /etc/apt/sources.list /etc/apt/sources.list.d/
+
+# e.g. drop the old microsoft.asc line, keep the current microsoft.gpg one
+sudo sed -i '/microsoft\.asc/d' /etc/apt/sources.list.d/vscode.list
+
+# definitive check — re-reads the whole sources tree, exactly what the playbook does
+sudo apt-get update
+```
+
+A non-fatal `W: Target … is configured multiple times` is the harmless cousin: the same
+repo is defined twice with the *same* key (or one entry has no key), so apt just
+deduplicates. Safe to ignore, or clean up the same way.
+
+Why duplicates arise at all — three kinds of repo definitions can coexist on one machine:
+
+- **Playbook-managed** `*.list`, written by `apt_repository` (Docker, Tailscale, Typora,
+  Ghostty, VS Code, Chrome, Charm). The source of truth.
+- **Vendor-self-configured** `*.sources` — the `code` and `google-chrome` packages drop, and
+  **recreate on upgrade**, their own files. The VS Code task deliberately points at the
+  *same* key path the package uses (`/usr/share/keyrings/microsoft.gpg`) so the two entries
+  are a harmless duplicate rather than a fatal conflict.
+- **Manually added**, e.g. `adoptium.list` (Eclipse Temurin) — *not* in the playbook;
+  maintained by hand.
+
+> **Planned:** migrate these tasks to `ansible.builtin.deb822_repository`, which manages each
+> source declaratively (updating in place instead of appending) — making key/URL changes
+> self-healing and removing the manual cleanup above.
