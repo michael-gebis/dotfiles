@@ -19,13 +19,13 @@ The bootstrap script installs [Ansible](https://docs.ansible.com/) if needed, th
 
 ### Shell (`.bashrc`)
 
-The `.bashrc` is organized around a `bash_main` function that runs all setup, then cleans up helper functions afterward. Key features:
+The `.bashrc` is organized around a `_setup_main` function that runs all setup, then unsets its `_setup_*` helper functions afterward. Key features:
 
 - **Logging** — sources `~/.bashlog` if present; all sections call `bashlog` for tracing (useful when debugging shell startup). If `.bashlog` is missing, `bashlog` becomes a no-op.
-- **`pathprepend`** — helper to add directories to `$PATH` without duplicates.
-- **OS detection** — detects WSL2 vs native Linux and runs platform-specific setup (`do_windows` / `do_linux`).
+- **`_setup_pathprepend`** — helper to add directories to `$PATH` without duplicates.
+- **OS detection** — detects WSL2 vs native Linux and runs platform-specific setup (`_setup_windows` / `_setup_linux`).
 - **Powerline prompt** — sets up [powerline-go](https://github.com/justjanne/powerline-go) if installed (shows error status and background job count).
-- **Tool initialization** — nvm, atuin, SDKMAN are initialized inside `bash_main` with existence checks so missing tools don't cause errors.
+- **Tool initialization** — nvm and SDKMAN are initialized inside `_setup_main` with existence checks so missing tools don't cause errors. [atuin](https://atuin.sh) (shell history) is initialized **at top level, outside `_setup_main`** — deliberately: it sources the vendored [bash-preexec](https://github.com/rcaloras/bash-preexec) (`~/.bash-preexec.sh`), whose `declare -a` hook arrays must be global. Inside a function they'd be local and vanish on return, silently breaking command recording (Ctrl-R still reads old history, but new commands aren't saved). atuin's config (`~/.config/atuin/config.toml`) is tracked but holds **no** server address; set `ATUIN_SYNC_ADDRESS` in `~/.bashrc.local` on machines that can reach a sync server — others run local-only.
 - **SSH wrapper** — a generic `ssh()` function that color-codes the terminal background based on the destination host. Reads host-to-color mappings from `~/.config/ssh-terminal-colors` (not tracked). Format: one line per entry, `glob_pattern hex_color`. Example:
 
   ```
@@ -33,7 +33,7 @@ The `.bashrc` is organized around a `bash_main` function that runs all setup, th
   *dev*    #0a3b1a
   ```
 
-- **Local overrides** — sources `~/.bashrc.local` (not tracked) at the end of `bash_main` for machine-specific configuration (e.g., toolchain paths, org-specific environment variables).
+- **Local overrides** — sources `~/.bashrc.local` (not tracked) at the end of `_setup_main` for machine-specific configuration (e.g., toolchain paths, org-specific environment variables).
 
 ### Ansible setup (`~/.config/ansible/`)
 
@@ -73,7 +73,7 @@ These files are machine-specific and should be created manually or copied separa
 
 | File | Purpose |
 |---|---|
-| `~/.bashrc.local` | Machine-specific shell config (toolchain paths, env vars) |
+| `~/.bashrc.local` | Machine-specific shell config (toolchain paths, env vars; e.g. `ATUIN_SYNC_ADDRESS` to point atuin's history sync at a server this machine can reach) |
 | `~/.config/ansible/local.yml` | Org-specific Ansible tasks (repos, packages) |
 | `~/.config/ssh-terminal-colors` | SSH host-to-color mappings for the terminal wrapper |
 
