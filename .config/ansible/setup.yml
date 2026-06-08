@@ -107,115 +107,114 @@
         state: directory
         mode: "0755"
 
-    # Docker
-    - name: Add Docker GPG key
-      ansible.builtin.get_url:
-        url: "https://download.docker.com/linux/ubuntu/gpg"
-        dest: /etc/apt/keyrings/docker.asc
-        mode: "0644"
+    # Third-party repos are written as deb822 .sources via deb822_repository, which
+    # updates each file in place rather than appending the way apt_repository did — so
+    # changing a key or URL can't leave a stale, conflicting line behind. The module
+    # fetches each signing key itself (signed_by: <url>), needs python3-debian, and does
+    # NOT refresh the apt cache (handled by the "Update apt cache" task below).
+    - name: Ensure python3-debian is present (required by deb822_repository)
+      ansible.builtin.apt:
+        name: python3-debian
+        state: present
+        update_cache: true
+
+    # On machines first provisioned with the old apt_repository tasks, the *.list files
+    # they wrote still linger beside the new *.sources and would duplicate (or, if the
+    # key path differs, fatally conflict with) them. Remove the ones we now own.
+    - name: Remove legacy .list repo files superseded by deb822 .sources
+      ansible.builtin.file:
+        path: "/etc/apt/sources.list.d/{{ item }}.list"
+        state: absent
+      loop:
+        - docker
+        - tailscale
+        - typora
+        - ghostty
+        - vscode
+        - google-chrome
+        - charm
 
     - name: Add Docker repository
-      ansible.builtin.apt_repository:
-        repo: >-
-          deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc]
-          https://download.docker.com/linux/ubuntu {{ ubuntu_release }} stable
-        filename: docker
-
-    # Tailscale
-    - name: Add Tailscale GPG key
-      ansible.builtin.get_url:
-        url: "https://pkgs.tailscale.com/stable/ubuntu/{{ ubuntu_release }}.noarmor.gpg"
-        dest: /usr/share/keyrings/tailscale-archive-keyring.gpg
-        mode: "0644"
+      ansible.builtin.deb822_repository:
+        name: docker
+        types: deb
+        uris: https://download.docker.com/linux/ubuntu
+        suites: "{{ ubuntu_release }}"
+        components: stable
+        architectures: amd64
+        signed_by: https://download.docker.com/linux/ubuntu/gpg
 
     - name: Add Tailscale repository
-      ansible.builtin.apt_repository:
-        repo: >-
-          deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg]
-          https://pkgs.tailscale.com/stable/ubuntu {{ ubuntu_release }} main
-        filename: tailscale
+      ansible.builtin.deb822_repository:
+        name: tailscale
+        types: deb
+        uris: https://pkgs.tailscale.com/stable/ubuntu
+        suites: "{{ ubuntu_release }}"
+        components: main
+        signed_by: "https://pkgs.tailscale.com/stable/ubuntu/{{ ubuntu_release }}.noarmor.gpg"
 
-    # Typora
-    - name: Add Typora GPG key
-      ansible.builtin.get_url:
-        url: https://typora.io/linux/public-key.asc
-        dest: /etc/apt/keyrings/typora.asc
-        mode: "0644"
-
+    # Flat repo: the suite is a path ending in "/", so components are omitted.
     - name: Add Typora repository
-      ansible.builtin.apt_repository:
-        repo: "deb [signed-by=/etc/apt/keyrings/typora.asc] https://downloads.typora.io/linux ./"
-        filename: typora
-
-    # Ghostty (PPA)
-    - name: Add Ghostty PPA GPG key
-      ansible.builtin.get_url:
-        url: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x0721FDF5FECB88DC6920361657C8EF455CEAE491"
-        dest: /etc/apt/keyrings/ghostty.asc
-        mode: "0644"
+      ansible.builtin.deb822_repository:
+        name: typora
+        types: deb
+        uris: https://downloads.typora.io/linux
+        suites: "./"
+        signed_by: https://typora.io/linux/public-key.asc
 
     - name: Add Ghostty PPA repository
-      ansible.builtin.apt_repository:
-        repo: >-
-          deb [signed-by=/etc/apt/keyrings/ghostty.asc]
-          https://ppa.launchpadcontent.net/mkasberg/ghostty-ubuntu/ubuntu {{ ubuntu_release }} main
-        filename: ghostty
+      ansible.builtin.deb822_repository:
+        name: ghostty
+        types: deb
+        uris: https://ppa.launchpadcontent.net/mkasberg/ghostty-ubuntu/ubuntu
+        suites: "{{ ubuntu_release }}"
+        components: main
+        signed_by: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x0721FDF5FECB88DC6920361657C8EF455CEAE491"
 
-    # VS Code (Microsoft)
-    # The `code` package self-manages vscode.sources, which references
-    # /usr/share/keyrings/microsoft.gpg and is recreated on every upgrade. Install our
-    # key at that SAME path and point vscode.list at it, so the two repo definitions
-    # share a key — a harmless duplicate (cf. docker.list + docker.sources) rather than
-    # a fatal "Conflicting Signed-By" error. get_url leaves the key armored; apt reads
-    # key content, not the file extension, and staying on get_url avoids a gpg/curl
-    # dependency that isn't satisfied until the package-install step further down.
-    - name: Add Microsoft GPG key (at the path the code package expects)
-      ansible.builtin.get_url:
-        url: https://packages.microsoft.com/keys/microsoft.asc
-        dest: /usr/share/keyrings/microsoft.gpg
-        mode: "0644"
-
+    # name: vscode writes the same vscode.sources the `code` package manages, so the two
+    # stay a single declaratively-managed file rather than conflicting copies.
     - name: Add VS Code repository
-      ansible.builtin.apt_repository:
-        repo: >-
-          deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg]
-          https://packages.microsoft.com/repos/code stable main
-        filename: vscode
+      ansible.builtin.deb822_repository:
+        name: vscode
+        types: deb
+        uris: https://packages.microsoft.com/repos/code
+        suites: stable
+        components: main
+        architectures: amd64
+        signed_by: https://packages.microsoft.com/keys/microsoft.asc
 
-    # Google Chrome
-    - name: Add Google Chrome GPG key
-      ansible.builtin.get_url:
-        url: https://dl.google.com/linux/linux_signing_key.pub
-        dest: /etc/apt/keyrings/google-chrome.asc
-        mode: "0644"
-
+    # Likewise, name: google-chrome matches the file the chrome package self-configures.
     - name: Add Google Chrome repository
-      ansible.builtin.apt_repository:
-        repo: >-
-          deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.asc]
-          https://dl.google.com/linux/chrome/deb/ stable main
-        filename: google-chrome
+      ansible.builtin.deb822_repository:
+        name: google-chrome
+        types: deb
+        uris: https://dl.google.com/linux/chrome/deb/
+        suites: stable
+        components: main
+        architectures: amd64
+        signed_by: https://dl.google.com/linux/linux_signing_key.pub
 
-    # Charm (glow)
-    - name: Add Charm GPG key
-      ansible.builtin.get_url:
-        url: https://repo.charm.sh/apt/gpg.key
-        dest: /etc/apt/keyrings/charm.asc
-        mode: "0644"
-
+    # Charm serves a flat repo addressed with literal wildcards (suite "*", component
+    # "*"); that is intentional, not a placeholder.
     - name: Add Charm repository
-      ansible.builtin.apt_repository:
-        repo: "deb [signed-by=/etc/apt/keyrings/charm.asc] https://repo.charm.sh/apt/ * *"
-        filename: charm
+      ansible.builtin.deb822_repository:
+        name: charm
+        types: deb
+        uris: https://repo.charm.sh/apt/
+        suites: "*"
+        components: "*"
+        signed_by: https://repo.charm.sh/apt/gpg.key
 
     ### -------------------------------------------------------
     ### Package installation
     ### -------------------------------------------------------
 
+    # No cache_valid_time here: deb822_repository does not refresh the cache itself, and
+    # on a fresh machine the bootstrap ran "apt update" only minutes ago — a valid-time
+    # guard could skip this and leave the new third-party repos unfetched before install.
     - name: Update apt cache
       ansible.builtin.apt:
         update_cache: true
-        cache_valid_time: 3600
 
     - name: Install apt packages
       ansible.builtin.apt:
