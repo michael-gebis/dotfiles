@@ -4,6 +4,16 @@ set -eu
 
 echo "=== yadm bootstrap ==="
 
+# The NOPASSWD grant below is removed by an EXIT trap, but a bootstrap that
+# dies without firing it (power loss, SIGKILL) leaves the grant behind.
+# Clear any leftover from a previous run first thing, so even a run that
+# fails before reaching the grant cleans up after its predecessor.
+sudoers_tmp="/etc/sudoers.d/99-yadm-bootstrap-$USER"
+if [ -e "$sudoers_tmp" ]; then
+    echo "Removing leftover sudoers grant from a previous bootstrap..."
+    sudo rm -f "$sudoers_tmp"
+fi
+
 # Install Ansible if not present
 if ! command -v ansible-playbook &> /dev/null; then
     echo "Installing Ansible..."
@@ -21,10 +31,16 @@ fi
 PLAYBOOK="$HOME/.config/ansible/setup.yml"
 if [[ -f "$PLAYBOOK" ]]; then
     echo "Running Ansible setup..."
+    # Safety net for the grant below: if this script dies in a way the EXIT
+    # trap can't catch (power loss, SIGKILL), the grant would persist, so a
+    # tmpfiles.d rule has systemd delete any leftover at every boot ("r!" =
+    # remove, boot only). No bootstrap survives a reboot, so a grant present
+    # at boot is by definition a leftover.
+    echo "r! /etc/sudoers.d/99-yadm-bootstrap-*" | sudo tee /etc/tmpfiles.d/yadm-bootstrap.conf >/dev/null
+
     # sudo-rs (Ubuntu 26.04+ default) doesn't reliably honor cached creds for
     # Ansible's pipe-based become. Grant temporary NOPASSWD for the duration
     # of this bootstrap; trap removes the file on any exit (success, failure, ^C).
-    sudoers_tmp="/etc/sudoers.d/99-yadm-bootstrap-$USER"
     echo "$USER ALL=(ALL) NOPASSWD: ALL" | sudo tee "$sudoers_tmp" >/dev/null
     trap 'sudo rm -f "$sudoers_tmp"' EXIT
     ansible-playbook -i localhost, "$PLAYBOOK"

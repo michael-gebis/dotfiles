@@ -15,6 +15,8 @@ yadm bootstrap
 
 The bootstrap script installs [Ansible](https://docs.ansible.com/) if needed, then runs `~/.config/ansible/setup.yml` to set up the machine. It will prompt for your sudo password.
 
+For the duration of the run, bootstrap grants itself temporary passwordless sudo (`/etc/sudoers.d/99-yadm-bootstrap-$USER`), removed on exit by a trap. Two safety nets cover a bootstrap that dies uncleanly (power loss, SIGKILL): the next bootstrap run clears any leftover grant at startup, and a tmpfiles.d rule (`/etc/tmpfiles.d/yadm-bootstrap.conf`, installed by bootstrap) has systemd clear it at every boot.
+
 ## What's included
 
 ### Shell (`.bashrc`)
