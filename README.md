@@ -41,7 +41,7 @@ The `.bashrc` is organized around a `_setup_main` function that runs all setup, 
 
 The playbook `setup.yml` is the generic, portable configuration tracked by yadm. It handles:
 
-- **Third-party repos & keys** — Docker, Tailscale, Typora, Ghostty (PPA), VS Code, Google Chrome
+- **Third-party repos & keys** — Docker, Tailscale, Typora, Ghostty (PPA), VS Code, Google Chrome, Charm (glow)
 - **APT packages** — dev tools, editors, search tools, Docker, desktop apps, networking, compression utilities
 - **Snap packages** — pdftk
 - **User-level tools** — powerline-go (via `go install`), atuin, nvm, SDKMAN
