@@ -1,30 +1,40 @@
 #!/bin/bash
 # Claude Code status line script
-# Mirrors the information powerline-go shows: user@host, cwd, git branch,
-# plus Claude-specific info: model and context usage.
+# Mirrors the information powerline-go shows: host, cwd, git branch,
+# plus Claude-specific info: model, context usage, and rate limit.
+# Runs on every refresh, so forks are kept to a minimum: one jq call
+# extracts all fields at once, one date call formats the reset time,
+# and the rest is bash builtins (plus git when cwd is a repo).
 
 input=$(cat)
 
-cwd=$(echo "$input" | jq -r '.cwd // .workspace.current_dir // empty')
-model=$(echo "$input" | jq -r '.model.display_name // empty')
-used_pct=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
-five_hr_pct=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
-effort=$(echo "$input" | jq -r '.effort.level // empty')
+# All fields in a single jq pass, joined with the ASCII unit separator.
+# (Unlike tab, a non-whitespace IFS char never collapses runs of
+# delimiters, so empty fields keep their position for read.)
+IFS=$'\x1f' read -r cwd model used_pct five_hr_pct five_hr_reset effort < <(
+    jq -r '[
+        (.cwd // .workspace.current_dir // ""),
+        (.model.display_name // ""),
+        (.context_window.used_percentage // ""),
+        (.rate_limits.five_hour.used_percentage // ""),
+        (.rate_limits.five_hour.resets_at // ""),
+        (.effort.level // "")
+    ] | map(tostring) | join("\u001f")' <<<"$input"
+)
 
 # Shorten "(1M context)" -> "(1M)" in the model display name
 model=${model/(1M context)/(1M)}
 
-# user@host
-user=$(whoami)
-host=$(hostname -s)
+host=${HOSTNAME%%.*}
 
 # Shorten cwd: replace $HOME with ~
 home_dir="${HOME:-$(getent passwd "$(whoami)" | cut -d: -f6)}"
-short_cwd=$(echo "$cwd" | sed "s|^${home_dir}|~|")
+short_cwd=${cwd/#"$home_dir"/\~}
 
-# Git branch (skip optional lock; ignore errors if not a git repo)
+# Git branch, falling back to a short hash when detached; both commands
+# fail quietly when cwd isn't in a git repo
 git_branch=""
-if [ -n "$cwd" ] && git -C "$cwd" rev-parse --git-dir > /dev/null 2>&1; then
+if [ -n "$cwd" ]; then
     git_branch=$(git -C "$cwd" symbolic-ref --short HEAD 2>/dev/null \
                  || git -C "$cwd" rev-parse --short HEAD 2>/dev/null)
 fi
@@ -33,17 +43,16 @@ fi
 line=""
 
 if [ -n "$used_pct" ]; then
-    printf_pct=$(printf "%.0f" "$used_pct")
-    line="ctx:${printf_pct}%"
+    printf -v used_fmt "%.0f" "$used_pct"
+    line="ctx:${used_fmt}%"
 fi
 
-five_hr_reset=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
 if [ -n "$five_hr_pct" ]; then
-    five_hr_fmt=$(printf "%.0f" "$five_hr_pct")
+    printf -v five_hr_fmt "%.0f" "$five_hr_pct"
     if [ -n "$five_hr_reset" ]; then
-        reset_time=$(date -d "@${five_hr_reset}" '+%-I:%M')
-        reset_ampm=$(date -d "@${five_hr_reset}" '+%p' | head -c1)
-        line="${line}${line:+  }${five_hr_fmt}%/${reset_time}${reset_ampm}"
+        # %p is AM/PM; stripping the trailing M leaves the A/P suffix
+        reset=$(date -d "@${five_hr_reset}" '+%-I:%M%p')
+        line="${line}${line:+  }${five_hr_fmt}%/${reset%[Mm]}"
     else
         line="${line}${line:+  }${five_hr_fmt}%"
     fi
