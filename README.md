@@ -21,7 +21,7 @@ The bootstrap script installs [Ansible](https://docs.ansible.com/) if needed, th
 
 The `.bashrc` is organized around a `_setup_main` function that runs all setup, then unsets its `_setup_*` helper functions afterward. Key features:
 
-- **Logging** — sources `~/.bashlog` if present; all sections call `bashlog` for tracing (useful when debugging shell startup). If `.bashlog` is missing, `bashlog` becomes a no-op.
+- **Logging** — sources `~/.bashlog` if present; all sections call `bashlog` for tracing (useful when debugging shell startup). If `.bashlog` is missing, `bashlog` becomes a no-op. On by default; export `BASHLOG_VERBOSE` to anything other than `true` to silence it (e.g. `BASHLOG_VERBOSE=false bash -l`).
 - **`_setup_pathprepend`** — helper to add directories to `$PATH` without duplicates.
 - **OS detection** — detects WSL2 vs native Linux and runs platform-specific setup (`_setup_windows` / `_setup_linux`).
 - **Powerline prompt** — sets up [powerline-go](https://github.com/justjanne/powerline-go) if installed (shows error status and background job count).

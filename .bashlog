@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
-VERBOSE=true
+### Logging helper for shell startup tracing (defines bashlog).
+### On by default; disable by exporting BASHLOG_VERBOSE to any value
+### other than "true" before this file is sourced, e.g.:
+###   BASHLOG_VERBOSE=false bash -l
+: "${BASHLOG_VERBOSE:=true}"
+
 function bashlog {
   # If not interactive, log nothing. (This is so that scp/sftp work)
   if [[ $- != *i* ]] ; then
     return
   fi
 
-
-  if [[ $VERBOSE ]] ; then 
-    echo $(date -u "+%Y.%m.%d-%H:%M:%S.%2N %Z") "$@";
+  if [[ $BASHLOG_VERBOSE == true ]] ; then
+    echo "$(date -u "+%Y.%m.%d-%H:%M:%S.%2N %Z")" "$@"
   fi
 }
