@@ -28,6 +28,7 @@ export VISUAL=vi
 export EDITOR="$VISUAL"
 _setup_pathprepend "$HOME/.cargo/bin"   # rust
 _setup_pathprepend "$HOME/.local/bin"   # user-local bin
+_setup_pathprepend "$HOME/go/bin"       # go install target (GOPATH default)
 
 ### Stop here for non-interactive shells. `return` is valid because .bashrc is
 ### always *sourced* (by .bash_profile for login shells, or directly otherwise).
