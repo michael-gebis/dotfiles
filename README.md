@@ -67,6 +67,11 @@ For machine-specific or org-specific packages, create `~/.config/ansible/local.y
     state: present
 ```
 
+### Other configs
+
+- `~/.tmux.conf` — tmux basics (mouse support, `C-a`/`C-b` dual prefix)
+- `~/.config/ghostty/config` — Ghostty terminal settings
+
 ### Files not tracked by yadm
 
 These files are machine-specific and should be created manually or copied separately:
@@ -76,6 +81,7 @@ These files are machine-specific and should be created manually or copied separa
 | `~/.bashrc.local` | Machine-specific shell config (toolchain paths, env vars; e.g. `ATUIN_SYNC_ADDRESS` to point atuin's history sync at a server this machine can reach) |
 | `~/.config/ansible/local.yml` | Org-specific Ansible tasks (repos, packages) |
 | `~/.config/ssh-terminal-colors` | SSH host-to-color mappings for the terminal wrapper |
+| `~/.gitconfig` | Git identity and editor — intentionally untracked: different machines use different git identities |
 
 ## Re-running the playbook
 
