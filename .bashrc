@@ -228,6 +228,7 @@ _setup_main() {
   ### Remove all setup-only functions (named `_setup_*`), including this one.
   ### Unsetting a *running* function is safe: bash finishes the current
   ### invocation from its in-memory copy; only the name binding disappears.
+  # shellcheck disable=SC2046  # word splitting is the point: one arg per function name
   unset -f $(compgen -A function _setup_)
 }
 
@@ -258,6 +259,7 @@ ssh() {
     if [[ -f "$config" ]]; then
         while read -r pattern hex; do
             [[ -z "$pattern" || "$pattern" == \#* ]] && continue
+            # shellcheck disable=SC2254  # unquoted on purpose: config patterns are globs
             case "$*" in
                 $pattern) color="$hex"; break ;;
             esac
