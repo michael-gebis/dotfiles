@@ -44,6 +44,7 @@
       - python3-pip
       - python3-venv
       - python-is-python3
+      - shellcheck
 
       # Dev libraries (VS Code native extension builds)
       - libfontconfig-dev
@@ -88,6 +89,7 @@
       - glow
       - gnupg
       - graphviz
+      - landscape-common
       - ncdu
       - pandoc
       - qpdf
