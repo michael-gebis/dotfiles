@@ -46,6 +46,12 @@ The playbook `setup.yml` is the generic, portable configuration tracked by yadm.
 - **Snap packages** — pdftk
 - **User-level tools** — powerline-go (via `go install`), atuin, nvm, SDKMAN
 
+A second playbook, `vscode.yml`, installs VS Code extensions. It is standalone by design — bootstrap does not run it. Run it manually when wanted:
+
+```bash
+ansible-playbook -i localhost, ~/.config/ansible/vscode.yml
+```
+
 For machine-specific or org-specific packages, create `~/.config/ansible/local.yml` (not tracked by yadm). This file is automatically included by the playbook if present. It runs as a list of Ansible tasks with `become: true` already in effect and access to the `ubuntu_release` variable. Example:
 
 ```yaml
