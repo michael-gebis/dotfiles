@@ -70,9 +70,21 @@ _setup_windows() {
   bashlog "start _setup_windows"
 
   # Set Windows native user and home directory.
-  # This is a long walk for a small drink of water.
-  WINUSER=$(/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/powershell.exe /c "echo -n \$env:username")
-  WINUSER="${WINUSER//$'\r'/}"   # strip any trailing CR (pure bash: no subshell, space-safe)
+  # Asking PowerShell is a long walk for a small drink of water -- its cold
+  # start adds ~0.5-3s to every new shell -- and the answer never changes
+  # for a given WSL instance, so take the walk once and cache the result.
+  # Delete the cache file to force a re-query.
+  local winuser_cache="$HOME/.cache/winuser"
+  if [ -s "$winuser_cache" ]; then
+    WINUSER=$(<"$winuser_cache")
+  else
+    WINUSER=$(/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/powershell.exe /c "echo -n \$env:username")
+    WINUSER="${WINUSER//$'\r'/}"   # strip any trailing CR (pure bash: no subshell, space-safe)
+    if [ -n "$WINUSER" ]; then     # don't cache a failed lookup
+      mkdir -p "$HOME/.cache"
+      printf '%s' "$WINUSER" > "$winuser_cache"
+    fi
+  fi
   export WINUSER WINHOME="/mnt/c/Users/$WINUSER"
 
   # Add "start" cmd to wsl2:
