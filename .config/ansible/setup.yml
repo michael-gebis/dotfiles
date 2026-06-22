@@ -229,6 +229,21 @@
         state: present
       loop: "{{ snap_packages }}"
 
+    # mmdc moved from a snap to a system-global npm install. Removal is a no-op on a
+    # fresh machine and migrates any machine still carrying the old snap (mirrors the
+    # "Remove legacy .list repo files" cleanup above). The npm install runs as root
+    # (play default become: true), landing in /usr/local/lib/node_modules.
+    - name: Remove mermaid-cli snap (replaced by the npm global install below)
+      community.general.snap:
+        name: mermaid-cli
+        state: absent
+
+    - name: Install mermaid-cli (mmdc) globally via npm
+      community.general.npm:
+        name: "@mermaid-js/mermaid-cli"
+        global: true
+        state: present
+
     ### -------------------------------------------------------
     ### User-level tools (no sudo)
     ### -------------------------------------------------------
