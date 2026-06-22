@@ -36,8 +36,10 @@
       - universal-ctags
 
       # Languages & build tools
+      - clang-format
       - cloc
       - golang-go
+      - indent
       - maven
       - meson
       - npm
@@ -90,10 +92,19 @@
       - gnupg
       - graphviz
       - landscape-common
+      - librsvg2-bin
       - ncdu
+      - nvme-cli
       - pandoc
+      - poppler-utils
       - qpdf
       - restic
+      # texlive: TeX engine + fonts so pandoc can render PDFs
+      - texlive-fonts-extra
+      - texlive-fonts-recommended
+      - texlive-latex-recommended
+      - texlive-luatex
+      - texlive-xetex
 
     snap_packages:
       - pdftk
