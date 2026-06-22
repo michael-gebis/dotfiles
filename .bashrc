@@ -26,6 +26,9 @@ _setup_pathprepend() {
 ### the guard is interactive-only (prompt, aliases, completion, ssh-agent, ...).
 export VISUAL=vi
 export EDITOR="$VISUAL"
+# Point Puppeteer (used by mermaid-cli/mmdc) at the system Chrome the playbook
+# installs, so it doesn't download or run its own bundled Chromium.
+export PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 _setup_pathprepend "$HOME/.cargo/bin"   # rust
 _setup_pathprepend "$HOME/.local/bin"   # user-local bin
 _setup_pathprepend "$HOME/go/bin"       # go install target (GOPATH default)
