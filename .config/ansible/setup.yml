@@ -36,6 +36,7 @@
       - universal-ctags
 
       # Languages & build tools
+      - build-essential
       - clang-format
       - cloc
       - golang-go
@@ -108,6 +109,12 @@
 
     snap_packages:
       - pdftk
+      - drawio                      # draw.io desktop - headless SVG export (command-flow.drawio)
+
+    npm_packages:
+      - "@mermaid-js/mermaid-cli"   # mmdc - Mermaid flow / sequence / state diagrams
+      - wavedrom-cli                # WaveDrom - register bit-fields + signal timing
+      - bytefield-svg               # bytefield-svg - multi-row byte-record diagrams
 
   tasks:
     ### -------------------------------------------------------
@@ -242,18 +249,25 @@
 
     # mmdc moved from a snap to a system-global npm install. Removal is a no-op on a
     # fresh machine and migrates any machine still carrying the old snap (mirrors the
-    # "Remove legacy .list repo files" cleanup above). The npm install runs as root
+    # "Remove legacy .list repo files" cleanup above). The npm installs run as root
     # (play default become: true), landing in /usr/local/lib/node_modules.
     - name: Remove mermaid-cli snap (replaced by the npm global install below)
       community.general.snap:
         name: mermaid-cli
         state: absent
 
-    - name: Install mermaid-cli (mmdc) globally via npm
+    # Node >=17 defaults to "verbatim" DNS order and tries the AAAA (IPv6) address first.
+    # On a host whose IPv6 is advertised-but-dead, npm then hangs to ETIMEDOUT instead of
+    # falling back to IPv4 (curl/git avoid this via Happy Eyeballs; npm does not). ipv4first
+    # prefers IPv4 and is a no-op where IPv6 genuinely works -> safe on every machine.
+    - name: Install global npm packages (diagram renderers)
       community.general.npm:
-        name: "@mermaid-js/mermaid-cli"
+        name: "{{ item }}"
         global: true
         state: present
+      loop: "{{ npm_packages }}"
+      environment:
+        NODE_OPTIONS: "--dns-result-order=ipv4first"
 
     ### -------------------------------------------------------
     ### User-level tools (no sudo)
@@ -296,6 +310,39 @@
         curl --proto '=https' --tlsv1.2 -s "https://get.sdkman.io" | bash
       args:
         creates: "{{ user_home }}/.sdkman/bin/sdkman-init.sh"
+
+    # d2 ships as a single static binary; its installer drops it in ~/.local/bin.
+    - name: Install d2 (diagram renderer)
+      become: false
+      ansible.builtin.shell: |
+        curl -fsSL https://d2lang.com/install.sh | sh -s -- --prefix "{{ user_home }}/.local"
+      args:
+        creates: "{{ user_home }}/.local/bin/d2"
+
+    # pikchr has no apt/snap/npm package, so build the upstream C binary into ~/.local/bin.
+    # report/diagrams/render.sh calls "pikchr-cli FILE > out.svg" with no flags, but the C
+    # pikchr needs --svg-only to emit SVG to stdout -> install a thin pikchr-cli wrapper too.
+    # (Needs a C toolchain; build-essential is in apt_packages above.)
+    - name: Build and install pikchr (C) into ~/.local/bin
+      become: false
+      ansible.builtin.shell: |
+        set -e
+        src="$(mktemp -d)"
+        git clone --depth 1 https://github.com/drhsqlite/pikchr "$src"
+        make -C "$src" pikchr
+        install -m 0755 "$src/pikchr" "{{ user_home }}/.local/bin/pikchr"
+        rm -rf "$src"
+      args:
+        creates: "{{ user_home }}/.local/bin/pikchr"
+
+    - name: Install pikchr-cli wrapper (adds --svg-only for render.sh)
+      become: false
+      ansible.builtin.copy:
+        dest: "{{ user_home }}/.local/bin/pikchr-cli"
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          exec pikchr --svg-only "$@"
 
     ### -------------------------------------------------------
     ### Local/org-specific tasks (if present)
