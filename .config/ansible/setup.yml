@@ -127,16 +127,11 @@
         state: directory
         mode: "0755"
 
-    # Third-party repos are written as deb822 .sources via deb822_repository, which
-    # updates each file in place rather than appending the way apt_repository did — so
-    # changing a key or URL can't leave a stale, conflicting line behind. The module
-    # fetches each signing key itself (signed_by: <url>), needs python3-debian, and does
-    # NOT refresh the apt cache (handled by the "Update apt cache" task below).
-    - name: Ensure python3-debian is present (required by deb822_repository)
-      ansible.builtin.apt:
-        name: python3-debian
-        state: present
-        update_cache: true
+    # === apt source cleanup — MUST run before the first apt operation below ===
+    # A leftover repo file that conflicts with one we manage (e.g. a ghostty repo whose
+    # Signed-By differs from ours) makes apt refuse to read ANY source, so the first
+    # "apt update" — including the implicit one in the python3-debian task — fails outright.
+    # Cleaning these up first is what unbreaks apt, so it has to precede that task.
 
     # On machines first provisioned with the old apt_repository tasks, the *.list files
     # they wrote still linger beside the new *.sources and would duplicate (or, if the
@@ -153,6 +148,36 @@
         - vscode
         - google-chrome
         - charm
+
+    # ghostty was historically added via `add-apt-repository ppa:mkasberg/ghostty-ubuntu`,
+    # which writes mkasberg-ubuntu-ghostty-ubuntu-<suite>.sources with the signing key INLINED.
+    # Our own ghostty.sources declares the same repo with Signed-By: /etc/apt/keyrings/ghostty.asc,
+    # so apt sees two different Signed-By values for one source and refuses to read the list.
+    # Drop the add-apt-repository copy (the glob covers any release codename) so only ours remains.
+    - name: Find stray add-apt-repository ghostty .sources (any suite)
+      ansible.builtin.find:
+        paths: /etc/apt/sources.list.d
+        patterns: "mkasberg-ubuntu-ghostty-ubuntu-*.sources"
+      register: stray_ghostty_sources
+
+    - name: Remove stray add-apt-repository ghostty .sources
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ stray_ghostty_sources.files }}"
+      loop_control:
+        label: "{{ item.path }}"
+
+    # Third-party repos are written as deb822 .sources via deb822_repository, which
+    # updates each file in place rather than appending the way apt_repository did — so
+    # changing a key or URL can't leave a stale, conflicting line behind. The module
+    # fetches each signing key itself (signed_by: <url>), needs python3-debian, and does
+    # NOT refresh the apt cache (handled by the "Update apt cache" task below).
+    - name: Ensure python3-debian is present (required by deb822_repository)
+      ansible.builtin.apt:
+        name: python3-debian
+        state: present
+        update_cache: true
 
     - name: Add Docker repository
       ansible.builtin.deb822_repository:
