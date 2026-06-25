@@ -305,6 +305,30 @@
       environment:
         NODE_OPTIONS: "--dns-result-order=ipv4first"
 
+    # Obsidian publishes official .deb/AppImage builds but no apt repo, and the
+    # .deb does NOT self-update (it sat on 1.9.14 for months while 1.12.x shipped).
+    # So look up the newest release on GitHub and install that .deb — but only when
+    # the installed version differs, else every run re-downloads the ~100 MB file.
+    - name: Look up the latest Obsidian release
+      ansible.builtin.uri:
+        url: https://api.github.com/repos/obsidianmd/obsidian-releases/releases/latest
+        return_content: true
+      register: obsidian_release
+      failed_when: false        # offline / rate-limited -> install task below just skips
+
+    - name: Get the installed Obsidian version (empty string if absent)
+      ansible.builtin.command: dpkg-query -W -f='${Version}' obsidian
+      register: obsidian_installed
+      changed_when: false
+      failed_when: false
+
+    - name: Install/upgrade Obsidian from the latest official .deb
+      ansible.builtin.apt:
+        deb: "{{ (obsidian_release.content | from_json).assets | selectattr('name', 'search', '_amd64\\.deb$') | map(attribute='browser_download_url') | first }}"
+      when:
+        - obsidian_release.status | default(0) == 200
+        - (obsidian_release.content | from_json).tag_name | regex_replace('^v', '') != obsidian_installed.stdout
+
     ### -------------------------------------------------------
     ### User-level tools (no sudo)
     ### -------------------------------------------------------
