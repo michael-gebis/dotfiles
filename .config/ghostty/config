@@ -50,3 +50,10 @@
 
 background = #1e1e3e
 
+# Crash isolation: run each window as its own process so one window crashing
+# doesn't take down every open terminal. Kept in sync with the launcher entry
+# (~/.local/share/applications/com.mitchellh.ghostty.desktop), whose main Exec
+# line omits --gtk-single-instance=true for the same reason.
+gtk-single-instance = false
+
+

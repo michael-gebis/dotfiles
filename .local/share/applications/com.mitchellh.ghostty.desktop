@@ -1,0 +1,30 @@
+[Desktop Entry]
+Version=1.0
+Name=Ghostty
+Type=Application
+Comment=A terminal emulator
+TryExec=/usr/bin/ghostty
+# Local override of /usr/share/applications/com.mitchellh.ghostty.desktop.
+# Change from the packaged file: both Exec lines drop --gtk-single-instance=true,
+# so each launch is its own process and one window crashing won't kill all open
+# terminals (see gtk-single-instance = false in ~/.config/ghostty/config).
+Exec=/usr/bin/ghostty
+Icon=com.mitchellh.ghostty
+Categories=System;TerminalEmulator;
+Keywords=terminal;tty;pty;
+StartupNotify=true
+StartupWMClass=com.mitchellh.ghostty
+Terminal=false
+Actions=new-window;
+X-GNOME-UsesNotifications=true
+X-TerminalArgExec=-e
+X-TerminalArgTitle=--title=
+X-TerminalArgAppId=--class=
+X-TerminalArgDir=--working-directory=
+X-TerminalArgHold=--wait-after-command
+DBusActivatable=true
+X-KDE-Shortcuts=Ctrl+Alt+T
+
+[Desktop Action new-window]
+Name=New Window
+Exec=/usr/bin/ghostty
