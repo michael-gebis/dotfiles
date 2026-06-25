@@ -404,6 +404,37 @@
           #!/bin/sh
           exec pikchr --svg-only "$@"
 
+    # lazydocker is a Docker TUI. `go install ...@latest` currently fails to build
+    # (it pulls Docker SDK v28, which dropped registry.ServiceConfig), so install the
+    # prebuilt release binary into ~/.local/bin instead — same idea as Obsidian above:
+    # look up the newest release and unpack it only when the installed version differs.
+    - name: Look up the latest lazydocker release
+      become: false
+      ansible.builtin.uri:
+        url: https://api.github.com/repos/jesseduffield/lazydocker/releases/latest
+        return_content: true
+      register: lazydocker_release
+      failed_when: false
+
+    - name: Get the installed lazydocker version (empty string if absent)
+      become: false
+      ansible.builtin.command: "{{ user_home }}/.local/bin/lazydocker --version"
+      register: lazydocker_installed
+      changed_when: false
+      failed_when: false
+
+    - name: Install/upgrade lazydocker from the latest release tarball
+      become: false
+      ansible.builtin.unarchive:
+        src: "{{ (lazydocker_release.content | from_json).assets | selectattr('name', 'search', 'Linux_x86_64\\.tar\\.gz$') | map(attribute='browser_download_url') | first }}"
+        dest: "{{ user_home }}/.local/bin"
+        include:
+          - lazydocker
+        remote_src: true
+      when:
+        - lazydocker_release.status | default(0) == 200
+        - ((lazydocker_release.content | from_json).tag_name | regex_replace('^v', '')) not in lazydocker_installed.stdout
+
     ### -------------------------------------------------------
     ### Local/org-specific tasks (if present)
     ### -------------------------------------------------------
