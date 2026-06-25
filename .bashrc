@@ -237,6 +237,35 @@ _setup_main() {
 
 _setup_main
 
+### fzf (fuzzy finder) -- set up BEFORE atuin below: both bind Ctrl-R and the
+### last initializer wins, so atuin keeps history search (Ctrl-R) while fzf keeps
+### Ctrl-T (paste file paths), Alt-C (cd into a dir), and **<Tab> completion.
+### Needs fzf on PATH (~/.local/bin, prepended above); the playbook installs it.
+if command -v fzf >/dev/null; then
+  # Drive fzf with fd (Ubuntu names it fdfind): fast and .gitignore-aware.
+  export FZF_DEFAULT_COMMAND='fdfind --type f --hidden --follow --exclude .git'
+  export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+  export FZF_ALT_C_COMMAND='fdfind --type d --hidden --follow --exclude .git'
+  export FZF_DEFAULT_OPTS='--height 40% --layout reverse --border'
+  # Ctrl-T file preview: prefer bat (Ubuntu: batcat), fall back to cat.
+  export FZF_CTRL_T_OPTS="--preview 'batcat --color=always --line-range=:500 {} 2>/dev/null || cat {} 2>/dev/null'"
+  eval "$(fzf --bash)"
+
+  # rgf [QUERY]: live ripgrep -- re-runs rg on every keystroke; Enter opens the
+  # match in $EDITOR at its line. Preview prefers bat, falls back to sed.
+  rgf() {
+    local rg="rg --column --line-number --no-heading --color=always --smart-case"
+    local picked
+    picked=$(: | fzf --ansi --disabled --query "${*:-}" \
+      --bind "start:reload:[ -n {q} ] && $rg -- {q} || true" \
+      --bind "change:reload:[ -n {q} ] && $rg -- {q} || true" \
+      --delimiter : \
+      --preview 'batcat --color=always --highlight-line {2} {1} 2>/dev/null || sed -n {2}p {1}' \
+      --preview-window 'up,60%,border-bottom,+{2}+3/3') || return
+    [ -n "$picked" ] && "${EDITOR:-vi}" +"$(cut -d: -f2 <<<"$picked")" "$(cut -d: -f1 <<<"$picked")"
+  }
+fi
+
 ### atuin (shell history):
 ### IMPORTANT: must be sourced at top-level, NOT inside a function.
 ### bash-preexec.sh uses `declare -a precmd_functions` / `preexec_functions`,

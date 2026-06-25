@@ -435,6 +435,36 @@
         - lazydocker_release.status | default(0) == 200
         - ((lazydocker_release.content | from_json).tag_name | regex_replace('^v', '')) not in lazydocker_installed.stdout
 
+    # fzf (fuzzy finder). The apt build trails upstream and lacks newer events
+    # (e.g. the start:reload the rgf helper in .bashrc relies on), so install the
+    # latest release binary into ~/.local/bin -- same fetch-when-newer pattern as above.
+    - name: Look up the latest fzf release
+      become: false
+      ansible.builtin.uri:
+        url: https://api.github.com/repos/junegunn/fzf/releases/latest
+        return_content: true
+      register: fzf_release
+      failed_when: false
+
+    - name: Get the installed fzf version (empty string if absent)
+      become: false
+      ansible.builtin.command: "{{ user_home }}/.local/bin/fzf --version"
+      register: fzf_installed
+      changed_when: false
+      failed_when: false
+
+    - name: Install/upgrade fzf from the latest release tarball
+      become: false
+      ansible.builtin.unarchive:
+        src: "{{ (fzf_release.content | from_json).assets | selectattr('name', 'search', 'linux_amd64\\.tar\\.gz$') | map(attribute='browser_download_url') | first }}"
+        dest: "{{ user_home }}/.local/bin"
+        include:
+          - fzf
+        remote_src: true
+      when:
+        - fzf_release.status | default(0) == 200
+        - ((fzf_release.content | from_json).tag_name | regex_replace('^v', '')) not in fzf_installed.stdout
+
     ### -------------------------------------------------------
     ### Local/org-specific tasks (if present)
     ### -------------------------------------------------------
