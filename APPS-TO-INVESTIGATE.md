@@ -39,7 +39,7 @@ Tags: `(apt)` `(charm repo — already configured!)` `(cargo)` `(go)` `(pip)` `(
 - [ ] **plantuml** `(apt)` — UML/sequence diagrams (the genre mermaid/d2/wavedrom/bytefield don't cover).
 
 ## Git
-- [ ] **lazygit** `(go / .deb)` — fast git TUI; a modern gitk.
+- [x] **lazygit** `(release binary → ~/.local/bin)` — fast git TUI; a modern gitk. ✅ installed + wired into setup.yml (asset is lowercase `linux_x86_64`; for the yadm repo try `yadm enter lazygit`).
 - [ ] **tig** `(apt)` — lighter text-mode git browser.
 
 ## Networking

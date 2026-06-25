@@ -465,6 +465,36 @@
         - fzf_release.status | default(0) == 200
         - ((fzf_release.content | from_json).tag_name | regex_replace('^v', '')) not in fzf_installed.stdout
 
+    # lazygit (git TUI), same fetch-when-newer release-binary pattern as above.
+    # NB: lazygit names its asset linux_x86_64 (lowercase) -- unlike lazydocker's
+    # Linux_x86_64 -- so match case-insensitively with (?i).
+    - name: Look up the latest lazygit release
+      become: false
+      ansible.builtin.uri:
+        url: https://api.github.com/repos/jesseduffield/lazygit/releases/latest
+        return_content: true
+      register: lazygit_release
+      failed_when: false
+
+    - name: Get the installed lazygit version (empty string if absent)
+      become: false
+      ansible.builtin.command: "{{ user_home }}/.local/bin/lazygit --version"
+      register: lazygit_installed
+      changed_when: false
+      failed_when: false
+
+    - name: Install/upgrade lazygit from the latest release tarball
+      become: false
+      ansible.builtin.unarchive:
+        src: "{{ (lazygit_release.content | from_json).assets | selectattr('name', 'search', '(?i)linux_x86_64\\.tar\\.gz$') | map(attribute='browser_download_url') | first }}"
+        dest: "{{ user_home }}/.local/bin"
+        include:
+          - lazygit
+        remote_src: true
+      when:
+        - lazygit_release.status | default(0) == 200
+        - ((lazygit_release.content | from_json).tag_name | regex_replace('^v', '')) not in lazygit_installed.stdout
+
     ### -------------------------------------------------------
     ### Local/org-specific tasks (if present)
     ### -------------------------------------------------------
