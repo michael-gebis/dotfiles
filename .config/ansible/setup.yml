@@ -97,6 +97,7 @@
       - ncdu
       - nvme-cli
       - pandoc
+      - pdfgrep
       - poppler-utils
       - qpdf
       - restic
