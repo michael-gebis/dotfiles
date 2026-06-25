@@ -37,6 +37,7 @@
 
       # Languages & build tools
       - build-essential
+      - clang
       - clang-format
       - cloc
       - golang-go
@@ -65,6 +66,7 @@
       # Desktop apps
       - code
       - flameshot
+      - gnome-tweaks
       - google-chrome-stable
       - inkscape
       - okular
@@ -72,6 +74,7 @@
       - wireshark
 
       # Networking
+      - bmon
       - net-tools
       - openssh-server
       - socat
@@ -87,11 +90,15 @@
       - zstd
 
       # Utilities
+      - btop
       - ca-certificates
+      # provides kvm-ok (KVM/virtualization readiness check)
+      - cpu-checker
       - curl
       - glow
       - gnupg
       - graphviz
+      - htop
       - landscape-common
       - librsvg2-bin
       - ncdu
@@ -107,6 +114,9 @@
       - texlive-latex-recommended
       - texlive-luatex
       - texlive-xetex
+      # gstreamer/ffmpeg media codecs for desktop playback
+      - ubuntu-restricted-addons
+      - wget
 
     snap_packages:
       - pdftk
