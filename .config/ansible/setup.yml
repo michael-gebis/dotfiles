@@ -357,6 +357,20 @@
       args:
         creates: "{{ user_home }}/.local/bin/uv"
 
+    # rustup: official Rust toolchain manager (apt's rustc/cargo are far too old
+    # for current projects). --no-modify-path because .bashrc already prepends
+    # ~/.cargo/bin (top of file), so rustup must NOT append its own duplicate PATH
+    # line to the tracked shell rc. Installs stable once; refresh with `rustup update`.
+    - name: Install rustup + stable Rust toolchain
+      become: false
+      ansible.builtin.shell: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile default
+      args:
+        creates: "{{ user_home }}/.cargo/bin/rustup"
+      environment:
+        RUSTUP_HOME: "{{ user_home }}/.rustup"
+        CARGO_HOME: "{{ user_home }}/.cargo"
+
     - name: Install nvm
       become: false
       ansible.builtin.shell: |
