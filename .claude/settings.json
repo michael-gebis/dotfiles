@@ -3,6 +3,7 @@
   "env": {
     "CLAUDE_CODE_EFFORT_LEVEL": "max"
   },
+  "model": "opus[1m]",
   "statusLine": {
     "type": "command",
     "command": "bash ~/.claude/statusline-command.sh"
