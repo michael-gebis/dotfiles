@@ -277,6 +277,19 @@
         name: "{{ apt_packages }}"
         state: present
 
+    # fd-find (in apt_packages above) installs the binary as `fdfind` on Debian/Ubuntu:
+    # the `fd` name collides with an unrelated package, so Debian renamed it. Symlink the
+    # conventional `fd` name into /usr/local/bin so both scripts and interactive shells
+    # can call `fd` (an alias would only cover interactive shells). /usr/local/bin is
+    # always on PATH ahead of /usr/bin and keeps the link beside the system package it
+    # targets -- ~/.local/bin is reserved for the hand-fetched release binaries below.
+    - name: Symlink fd -> fdfind (Ubuntu names the fd-find binary 'fdfind')
+      ansible.builtin.file:
+        src: /usr/bin/fdfind
+        dest: /usr/local/bin/fd
+        state: link
+        force: true
+
     - name: Install snap packages
       community.general.snap:
         name: "{{ item }}"
