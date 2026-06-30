@@ -522,6 +522,18 @@
         - lazygit_release.status | default(0) == 200
         - ((lazygit_release.content | from_json).tag_name | regex_replace('^v', '')) not in lazygit_installed.stdout
 
+    # GNOME dock pins live in dconf (binary, not yadm-friendly), so enforce a denylist
+    # instead: unpin-apps strips unwanted .desktop IDs from org.gnome.shell favorite-apps.
+    # It is subtractive (keeps every other pin) and no-ops where gsettings/GNOME is absent
+    # (WSL, headless), so it is safe on every machine. become: false so it edits the user's
+    # dconf via the user's DBus session, not root's.
+    - name: Unpin unwanted apps from the GNOME dock
+      become: false
+      ansible.builtin.command: "{{ user_home }}/.local/bin/unpin-apps"
+      register: unpin_result
+      changed_when: "'unpinned:' in unpin_result.stdout"
+      failed_when: false
+
     ### -------------------------------------------------------
     ### Local/org-specific tasks (if present)
     ### -------------------------------------------------------

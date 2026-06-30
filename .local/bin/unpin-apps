@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+"""Unpin a denylist of apps from the GNOME dock (org.gnome.shell favorite-apps).
+
+Subtractive: read whatever is currently pinned, drop the denylisted .desktop IDs,
+write the rest back. Idempotent, and a clean no-op where gsettings/GNOME is absent
+(WSL, headless), so it is safe to run from the bootstrap playbook on any machine.
+"""
+
+import ast
+import shutil
+import subprocess
+import sys
+
+SCHEMA: str = "org.gnome.shell"
+KEY: str = "favorite-apps"
+
+# .desktop IDs to always keep unpinned, wherever they appear.
+DENYLIST: list[str] = [
+    "snap-store_snap-store.desktop",
+    "org.gnome.Yelp.desktop",
+]
+
+
+def main() -> int:
+    if shutil.which("gsettings") is None:
+        print("gsettings not found; skipping (not a GNOME machine).")
+        return 0
+
+    try:
+        raw: str = subprocess.check_output(
+            ["gsettings", "get", SCHEMA, KEY], text=True
+        ).strip()
+    except subprocess.CalledProcessError:
+        print(f"could not read {SCHEMA}.{KEY}; skipping.")
+        return 0
+
+    # An empty array prints as "@as []"; strip any leading GVariant type tag.
+    if raw.startswith("@"):
+        raw = raw.split(" ", 1)[1] if " " in raw else "[]"
+
+    try:
+        current: list[str] = list(ast.literal_eval(raw))
+    except (ValueError, SyntaxError):
+        print(f"unexpected value for {KEY}: {raw!r}; skipping.")
+        return 0
+
+    removed: list[str] = [app for app in current if app in DENYLIST]
+    if not removed:
+        print("nothing to unpin.")
+        return 0
+
+    kept: list[str] = [app for app in current if app not in DENYLIST]
+    new_value: str = "[" + ", ".join(f"'{app}'" for app in kept) + "]"
+    subprocess.run(["gsettings", "set", SCHEMA, KEY, new_value], check=True)
+    print(f"unpinned: {', '.join(removed)}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
