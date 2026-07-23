@@ -535,6 +535,75 @@
       failed_when: false
 
     ### -------------------------------------------------------
+    ### Tor Browser (official tarball -- no apt repo/snap exists)
+    ### -------------------------------------------------------
+
+    # Ubuntu 24.04+ denies unprivileged user namespaces to unconfined binaries
+    # (kernel.apparmor_restrict_unprivileged_userns=1), which crashes the sandbox
+    # of any browser installed outside apt/snap at launch. This stub profile
+    # exists solely to grant userns to the tarball install -- flags=(unconfined)
+    # imposes no other confinement, the same pattern as the stub profiles Ubuntu
+    # ships in /etc/apparmor.d for chrome/opera. Skipped where AppArmor is
+    # absent (WSL), where the restriction doesn't apply either.
+    - name: Install AppArmor userns profile for Tor Browser
+      ansible.builtin.copy:
+        dest: /etc/apparmor.d/tor-browser
+        mode: "0644"
+        content: |
+          abi <abi/4.0>,
+          include <tunables/global>
+
+          profile tor-browser @{HOME}/.local/share/tor-browser/Browser/firefox.real flags=(unconfined) {
+            userns,
+
+            include if exists <local/tor-browser>
+          }
+      register: torbrowser_apparmor
+      when: ansible_facts.apparmor.status | default('disabled') == 'enabled'
+
+    - name: Load the Tor Browser AppArmor profile
+      ansible.builtin.command: apparmor_parser -r /etc/apparmor.d/tor-browser
+      when: torbrowser_apparmor is changed
+
+    # The Tor Project ships the browser only as a tarball: deb.torproject.org
+    # carries just the tor daemon (the browser bundles its own tor), and apt's
+    # torbrowser-launcher breaks whenever Tor rotates signing keys. The tarball
+    # self-updates in place once installed somewhere user-writable, so this is
+    # an install-once creates: task like atuin/uv above -- NOT the
+    # version-guarded re-fetch used for fzf/lazygit. downloads.json is Tor's own
+    # update channel (update_3); keys verified 2026-07:
+    # .downloads["linux-x86_64"].ALL.binary (the .asc signature URL sits
+    # alongside as .sig, if GPG verification is ever wanted).
+    - name: Look up the current Tor Browser release
+      become: false
+      ansible.builtin.uri:
+        url: https://aus1.torproject.org/torbrowser/update_3/release/downloads.json
+        return_content: true
+      register: torbrowser_release
+      failed_when: false        # offline -> install task below just skips
+
+    - name: Install Tor Browser into ~/.local/share (self-updates thereafter)
+      become: false
+      ansible.builtin.unarchive:
+        src: "{{ (torbrowser_release.content | from_json).downloads['linux-x86_64'].ALL.binary }}"
+        dest: "{{ user_home }}/.local/share"
+        remote_src: true
+        creates: "{{ user_home }}/.local/share/tor-browser"
+      when: torbrowser_release.status | default(0) == 200
+
+    # start-tor-browser.desktop is a self-modifying polyglot script whose
+    # shebang is a RELATIVE path (#!/usr/bin/env ./Browser/execdesktop), so it
+    # runs only with the install dir as cwd (env: 'No such file or directory',
+    # rc 127, otherwise) -- hence chdir, mirroring the documented
+    # "cd tor-browser && ./start-tor-browser.desktop --register-app" usage.
+    - name: Register the Tor Browser desktop entry
+      become: false
+      ansible.builtin.command: ./start-tor-browser.desktop --register-app
+      args:
+        chdir: "{{ user_home }}/.local/share/tor-browser"
+        creates: "{{ user_home }}/.local/share/applications/start-tor-browser.desktop"
+
+    ### -------------------------------------------------------
     ### Local/org-specific tasks (if present)
     ### -------------------------------------------------------
 

@@ -47,6 +47,7 @@ Tags: `(apt)` `(charm repo — already configured!)` `(cargo)` `(go)` `(pip)` `(
 - [ ] **xh** `(cargo)` — friendly rust HTTP client vs curl.
 - [ ] **doggo** `(go)` — modern `dig`.
 - [ ] **bandwhich** `(cargo)` — per-*process* bandwidth (vs per-interface bmon).
+- [x] **tor-browser** `(official tarball → ~/.local/share/tor-browser)` — privacy browser; Tor ships no apt repo/snap for it. ✅ installed + wired into setup.yml (install-once, self-updates in place; AppArmor userns profile for 24.04+). See appendix.
 
 ## Docker
 - [x] **lazydocker** `(release binary → ~/.local/bin)` — container/image/log TUI. ✅ installed + wired into setup.yml (go install is broken; uses the GitHub release tarball).
@@ -106,3 +107,30 @@ exec bash      # or: source ~/.bashrc, or open a new terminal
 
 **More to explore later:** the `fzf.vim` plugin (`:Files` / `:Rg` / `:GFiles` /
 `:Buffers`), the `fzf --tmux center` popup, and `zi` once `zoxide` is installed.
+
+## tor-browser — installed & wired in (2026-07-23)
+
+Official-tarball route, chosen over apt's `torbrowser-launcher` (which has a
+history of breaking when Tor rotates signing keys). `setup.yml` reads Tor's
+release metadata (`aus1.torproject.org/torbrowser/update_3/release/downloads.json`),
+unpacks the tarball into `~/.local/share/tor-browser`, and registers the desktop
+entry. Install-once `creates:` guard, atuin-style — the browser **self-updates
+in place**, so no version-guarded re-fetch like fzf/lazygit.
+
+NB: the register step must run *from the install dir* — the .desktop file's
+shebang is a relative path (`#!/usr/bin/env ./Browser/execdesktop`), so the
+playbook task uses `chdir:`; by absolute path it dies with rc 127.
+
+Also installs `/etc/apparmor.d/tor-browser`, a stub profile granting `userns`;
+without it the sandbox crashes on Ubuntu 24.04+
+(`kernel.apparmor_restrict_unprivileged_userns=1`). Those tasks skip where
+AppArmor is absent (WSL).
+
+**Install** — re-run the playbook (or `yadm bootstrap`):
+
+```bash
+ansible-playbook -i localhost, ~/.config/ansible/setup.yml --ask-become-pass
+```
+
+Tarball is fetched over TLS from torproject.org; the `.asc` GPG signature
+(published in the same JSON) is not verified — possible future hardening.
