@@ -24,6 +24,7 @@
       - vim
 
       # Version control
+      - gh
       - git
       - gitk
       - yadm
@@ -117,6 +118,8 @@
       # gstreamer/ffmpeg media codecs for desktop playback
       - ubuntu-restricted-addons
       - wget
+      # headless X server -- run GUI apps without a display (xvfb-run <cmd>)
+      - xvfb
 
     snap_packages:
       - pdftk
@@ -159,6 +162,9 @@
         - vscode
         - google-chrome
         - charm
+        # github-cli.list is what GitHub's own install docs write; a machine where gh
+        # was hand-installed that way would carry it beside our github-cli.sources.
+        - github-cli
 
     # ghostty was historically added via `add-apt-repository ppa:mkasberg/ghostty-ubuntu`,
     # which writes mkasberg-ubuntu-ghostty-ubuntu-<suite>.sources with the signing key INLINED.
@@ -260,6 +266,19 @@
         suites: "*"
         components: "*"
         signed_by: https://repo.charm.sh/apt/gpg.key
+
+    # name: github-cli matches the filename GitHub's install docs write (see the
+    # legacy .list cleanup above). The suite is literally "stable", not the Ubuntu
+    # release codename.
+    - name: Add GitHub CLI repository
+      ansible.builtin.deb822_repository:
+        name: github-cli
+        types: deb
+        uris: https://cli.github.com/packages
+        suites: stable
+        components: main
+        architectures: amd64
+        signed_by: https://cli.github.com/packages/githubcli-archive-keyring.gpg
 
     ### -------------------------------------------------------
     ### Package installation
@@ -521,6 +540,38 @@
       when:
         - lazygit_release.status | default(0) == 200
         - ((lazygit_release.content | from_json).tag_name | regex_replace('^v', '')) not in lazygit_installed.stdout
+
+    # tea (Gitea CLI), same fetch-when-newer pattern -- but the releases live on
+    # gitea.com, whose API mirrors GitHub's shape, and the asset is a BARE binary
+    # (no tarball), so get_url replaces unarchive. force: true because get_url
+    # otherwise never overwrites an existing dest -- safe here since the version
+    # guard already limits this task to genuine upgrades. The 'linux-amd64$'
+    # anchor skips each binary's .xz and .xz.sha256 siblings.
+    - name: Look up the latest tea release
+      become: false
+      ansible.builtin.uri:
+        url: https://gitea.com/api/v1/repos/gitea/tea/releases/latest
+        return_content: true
+      register: tea_release
+      failed_when: false
+
+    - name: Get the installed tea version (empty string if absent)
+      become: false
+      ansible.builtin.command: "{{ user_home }}/.local/bin/tea --version"
+      register: tea_installed
+      changed_when: false
+      failed_when: false
+
+    - name: Install/upgrade tea from the latest release binary
+      become: false
+      ansible.builtin.get_url:
+        url: "{{ (tea_release.content | from_json).assets | selectattr('name', 'search', 'linux-amd64$') | map(attribute='browser_download_url') | first }}"
+        dest: "{{ user_home }}/.local/bin/tea"
+        mode: "0755"
+        force: true
+      when:
+        - tea_release.status | default(0) == 200
+        - ((tea_release.content | from_json).tag_name | regex_replace('^v', '')) not in tea_installed.stdout
 
     # GNOME dock pins live in dconf (binary, not yadm-friendly), so enforce a denylist
     # instead: unpin-apps strips unwanted .desktop IDs from org.gnome.shell favorite-apps.

@@ -17,7 +17,7 @@ Tags: `(apt)` `(charm repo — already configured!)` `(cargo)` `(go)` `(pip)` `(
 - [x] **fzf** `(release binary → ~/.local/bin)` — fuzzy finder; connective tissue for rg/fd/git/atuin. Ctrl-T, `**<tab>`, vim integration. ✅ installed + wired into setup.yml & .bashrc (atuin keeps Ctrl-R; fzf gets Ctrl-T/Alt-C/completion + an `rgf` live-grep helper).
 - [ ] **delta** `(cargo / .deb)` — syntax-highlighted side-by-side git diffs; upgrades every `git diff`/`git show`/`yadm diff`.
 - [ ] **zoxide** `(apt)` — `cd` that learns frequent dirs (`z proj`); natural atuin sibling.
-- [ ] **gh** `(apt repo)` — GitHub CLI: PRs/issues/releases/auth from the terminal.
+- [x] **gh** `(apt repo)` — GitHub CLI: PRs/issues/releases/auth from the terminal. ✅ installed + wired into setup.yml (official cli.github.com repo via deb822; `gh auth login` once per machine).
 - [ ] **direnv** `(apt)` — per-directory env auto-load; auto-activates Go/Java(SDKMAN)/Python(uv)/Node(nvm) on `cd`.
 - [ ] **bat** `(apt: batcat)` — `cat` with syntax highlighting + git gutters; also powers fzf previews.
 
@@ -40,6 +40,7 @@ Tags: `(apt)` `(charm repo — already configured!)` `(cargo)` `(go)` `(pip)` `(
 
 ## Git
 - [x] **lazygit** `(release binary → ~/.local/bin)` — fast git TUI; a modern gitk. ✅ installed + wired into setup.yml (asset is lowercase `linux_x86_64`; for the yadm repo try `yadm enter lazygit`).
+- [x] **tea** `(release binary → ~/.local/bin)` — Gitea CLI: gh's counterpart for gitea.com / self-hosted Gitea. ✅ installed + wired into setup.yml (releases live on gitea.com — API mirrors GitHub's, but the asset is a bare binary, so get_url not unarchive; `tea login add` once per instance).
 - [ ] **tig** `(apt)` — lighter text-mode git browser.
 
 ## Networking
