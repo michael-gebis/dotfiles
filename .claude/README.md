@@ -51,8 +51,10 @@ Caveats:
   bypass it.
 - If you need to pass your own `--settings` for an experiment, call
   `command claude --settings <file> ...` to avoid stacking two flags.
-- Setting-up a new machine: nothing to do — the wrapper no-ops until a
-  `settings.machine.json` is created there.
+- Setting up a new machine: the wrapper itself needs nothing (it no-ops
+  until a `settings.machine.json` exists) — but the ripgrep guard DOES
+  need setup: create that file with one of the entries from the guard
+  section below, or the machine runs with no guard at all.
 
 Full investigation writeup (probes, findings, design rationale):
 `~/proj/private/claude-machine-local-settings.md`.
