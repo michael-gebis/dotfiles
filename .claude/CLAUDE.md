@@ -5,8 +5,9 @@
 # Utility functions
 - prefer to use ripgrep/rg to grep
 - rg's `-r` means `--replace`, NOT recursive (that's grep's flag) — rg recurses by
-  default, so never pass `-r` for recursion. A PreToolUse hook
-  (`~/.claude/hooks/rg_replace_guard.py`) denies short `-r`; spell out `--replace`
+  default, so never pass `-r` for recursion. A PreToolUse hook denies short `-r`
+  (self-adapting: the Rust build at `~/proj/private/src/rg_replace_guard` where
+  present, else `~/.claude/hooks/rg_replace_guard.py`); spell out `--replace`
   on the rare occasion a replacement preview is actually intended.
 
 # Claude Code settings layering

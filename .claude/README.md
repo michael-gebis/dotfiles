@@ -8,7 +8,7 @@ machines and which are deliberately machine-local.
 | `settings.json` | yes | settings wanted on EVERY machine (model, env, statusline, hooks) |
 | `settings.machine.json` | **never** | overrides for THIS machine only — see below |
 | `settings.local.json` | **never** | written by Claude Code itself: this is the *project-local* settings file for sessions whose cwd is under `$HOME` outside any repo (its "always allow" permission approvals land here). It is NOT a user-level tier and is only loaded by such sessions — do not put settings here expecting global effect. |
-| `hooks/` | yes | hook scripts referenced by `settings.json` (e.g. `rg_replace_guard.py`) |
+| `hooks/` | yes | hook scripts referenced by `settings.json`. `rg_replace_guard.py` is the portable fallback: the hook command is self-adapting and execs the Rust build (private `src/rg_replace_guard/`) where one has been built. |
 | `CLAUDE.md` | yes | global instructions for Claude, all projects |
 | `README.md` | yes | this file |
 

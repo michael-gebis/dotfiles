@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "payload=$(cat); case \"$payload\" in *rg*) printf '%s' \"$payload\" | python3 \"$HOME/.claude/hooks/rg_replace_guard.py\";; esac",
+            "command": "g=\"$HOME/proj/private/src/rg_replace_guard/target/release/rg_replace_guard\"; if [ -x \"$g\" ]; then exec \"$g\"; else payload=$(cat); case \"$payload\" in *rg*) printf '%s' \"$payload\" | python3 \"$HOME/.claude/hooks/rg_replace_guard.py\";; esac; fi",
             "timeout": 10
           }
         ]
