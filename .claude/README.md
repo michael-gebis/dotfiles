@@ -8,7 +8,7 @@ machines and which are deliberately machine-local.
 | `settings.json` | yes | settings wanted on EVERY machine (model, env, statusline, hooks) |
 | `settings.machine.json` | **never** | overrides for THIS machine only — see below |
 | `settings.local.json` | **never** | written by Claude Code itself: this is the *project-local* settings file for sessions whose cwd is under `$HOME` outside any repo (its "always allow" permission approvals land here). It is NOT a user-level tier and is only loaded by such sessions — do not put settings here expecting global effect. |
-| `hooks/` | yes | hook scripts referenced by `settings.json`. `rg_replace_guard.py` is the portable fallback: the hook command is self-adapting and execs the Rust build (private `src/rg_replace_guard/`) where one has been built. |
+| `hooks/` | yes | hook scripts referenced by hook entries. `rg_replace_guard.py` is the portable python guard, used by machines without the Rust build (see the guard section below). |
 | `CLAUDE.md` | yes | global instructions for Claude, all projects |
 | `README.md` | yes | this file |
 
@@ -56,3 +56,43 @@ Caveats:
 
 Full investigation writeup (probes, findings, design rationale):
 `~/proj/private/claude-machine-local-settings.md`.
+
+## The ripgrep `-r` guard: wired per machine
+
+The PreToolUse guard that denies ripgrep's short `-r` (it means `--replace`,
+not recursive) is deliberately NOT in the synced `settings.json`: the fast
+engine is a locally-built binary, and hooks merge across tiers, so a synced
+entry would run *in addition to* the machine one. Each machine instead
+carries exactly one entry in its `settings.machine.json`:
+
+**Machine with the Rust build** (~0.7 ms/call, exec form — no shell; build
+once with `cargo build --release` in `private/src/rg_replace_guard/`):
+
+```json
+"hooks": { "PreToolUse": [ { "matcher": "Bash", "hooks": [ {
+  "type": "command",
+  "command": "/home/mgebis/proj/private/src/rg_replace_guard/target/release/rg_replace_guard",
+  "args": [], "timeout": 10 } ] } ] }
+```
+
+**Machine without it** (~2 ms common case; needs only python3 — the script
+is synced in `hooks/`, so this works on any machine as-is):
+
+```json
+"hooks": { "PreToolUse": [ { "matcher": "Bash", "hooks": [ {
+  "type": "command",
+  "command": "payload=$(cat); case \"$payload\" in *rg*) printf '%s' \"$payload\" | python3 \"$HOME/.claude/hooks/rg_replace_guard.py\";; esac",
+  "timeout": 10 } ] } ] }
+```
+
+Caveats of this arrangement (accepted for speed, 2026-07-28):
+
+- The guard exists only where a `settings.machine.json` entry exists. A
+  freshly synced machine is UNGUARDED until its entry is added.
+- The machine file loads via the `claude()` wrapper, so launches that
+  bypass the shell function (IDE extensions, SDK, exec'ing the binary
+  directly) run without the guard — verified empirically. If either
+  caveat starts to matter, the alternatives are: move the entry to
+  `/etc/claude-code/managed-settings.json` (machine-local AND loads for
+  every launch; needs sudo), or revert to the self-adapting synced
+  command documented in `private/src/rg_replace_guard/README.md`.

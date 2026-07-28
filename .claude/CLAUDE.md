@@ -5,10 +5,11 @@
 # Utility functions
 - prefer to use ripgrep/rg to grep
 - rg's `-r` means `--replace`, NOT recursive (that's grep's flag) — rg recurses by
-  default, so never pass `-r` for recursion. A PreToolUse hook denies short `-r`
-  (self-adapting: the Rust build at `~/proj/private/src/rg_replace_guard` where
-  present, else `~/.claude/hooks/rg_replace_guard.py`); spell out `--replace`
-  on the rare occasion a replacement preview is actually intended.
+  default, so never pass `-r` for recursion. A PreToolUse hook denies short `-r`,
+  wired per machine in `settings.machine.json` (Rust build where present, else the
+  synced `hooks/rg_replace_guard.py`; recipes in `~/.claude/README.md`). The rule
+  binds even where the hook is absent (fresh machine, non-wrapper launch); spell
+  out `--replace` on the rare occasion a replacement preview is actually intended.
 
 # Claude Code settings layering
 - `~/.claude/settings.json` is yadm-synced to every machine. Machine-local overrides go in
