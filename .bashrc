@@ -311,4 +311,23 @@ ssh() {
     )
 }
 
+### claude (Claude Code) wrapper: layer machine-local settings over the
+### yadm-tracked ones. ~/.claude/settings.json is in yadm and identical on
+### every machine; ~/.claude/settings.machine.json is deliberately UNTRACKED
+### (same idea as .bashrc.local) and holds only this machine's overrides.
+### When it exists, pass it as a --settings layer: CLI-flag settings rank
+### above user settings and the tiers MERGE -- same-key values from the
+### machine file win, env merges per-variable, permission arrays accumulate,
+### and hooks from BOTH files run (so never define the same hook in both).
+### Shell launches only; IDE/SDK launches bypass this function. Details:
+### ~/.claude/README.md; investigation: private/claude-machine-local-settings.md
+claude() {
+    local machine="$HOME/.claude/settings.machine.json"
+    if [[ -f "$machine" ]]; then
+        command claude --settings "$machine" "$@"
+    else
+        command claude "$@"
+    fi
+}
+
 bashlog "end .bashrc"

@@ -9,6 +9,12 @@
   (`~/.claude/hooks/rg_replace_guard.py`) denies short `-r`; spell out `--replace`
   on the rare occasion a replacement preview is actually intended.
 
+# Claude Code settings layering
+- `~/.claude/settings.json` is yadm-synced to every machine. Machine-local overrides go in
+  `~/.claude/settings.machine.json` (NEVER tracked), loaded via the `claude()` wrapper in
+  `.bashrc`. Tiers merge (machine wins same-key; env per-variable; permissions accumulate;
+  hooks union — never define the same hook in both). Details: `~/.claude/README.md`.
+
 # Repo layout — two conventions, and never assume which one you're in
 
 Checkouts under `~/proj` follow one of two shapes. **Which level is the git root differs
