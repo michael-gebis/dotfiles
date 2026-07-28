@@ -1,3 +1,10 @@
+# Public dotfiles — never expose real names
+- Everything yadm-tracked — file contents, history, commit messages — is in a PUBLIC
+  repo. NEVER write real repo, project, branch, host, or client names into any
+  yadm-tracked file. Use obviously-fake placeholders (ACME, gadget, FEATURE_FOO) in
+  examples. Machine- or project-specific truths belong in untracked files
+  (`settings.machine.json`, the private notes repo).
+
 # Python
 - When creating python files, always use type hints
 - Always use uv instead of pip
@@ -6,9 +13,14 @@
 - prefer to use ripgrep/rg to grep
 - rg's `-r` means `--replace`, NOT recursive (that's grep's flag) — rg recurses by
   default, so never pass `-r` for recursion. A PreToolUse hook denies short `-r`
-  (self-adapting: the Rust build at `~/proj/private/src/rg_replace_guard` where
+  (self-adapting: the Rust build at `~/.local/bin/rg_replace_guard` where
   present, else `~/.claude/hooks/rg_replace_guard.py`); spell out `--replace`
   on the rare occasion a replacement preview is actually intended.
+
+# Viewing documents
+- When asked to open, show, view, or preview a document (especially Markdown), launch it in
+  Typora, detached so it stays open without blocking the session:
+  `setsid typora "<file>" >/dev/null 2>&1 </dev/null &`
 
 # Claude Code settings layering
 - `~/.claude/settings.json` is yadm-synced to every machine. Machine-local overrides go in
@@ -30,16 +42,16 @@ used where worktrees are expected.
 proj/gadget/                     plain dir  <- NOT a repo
 proj/gadget/main/                repo root, branch "main"
 proj/gadget/dev/                 repo root, branch "dev"          } same repo,
-proj/gadget/X9/                 repo root, branch "X9"          } several branches
-proj/ACME/firmware/           plain dir  <- NOT a repo
-proj/ACME/firmware/FEATURE_FOO/    repo root, branch "FEATURE_FOO"
+proj/gadget/X9/                  repo root, branch "X9"           } several branches
+proj/ACME/firmware/              plain dir  <- NOT a repo
+proj/ACME/firmware/FEATURE_FOO/  repo root, branch "FEATURE_FOO"
 ```
 
 **`<project>/…` — the plain shape.** The project directory *is* the repo root.
 
 ```
-proj/ACME/tools/          repo root, branch "master"
-proj/private/                      repo root, branch "master"   (scripts/ is a SUBDIR of it)
+proj/ACME/tools/                 repo root, branch "master"
+proj/wiki/                       repo root, branch "master"   (scripts/ is a SUBDIR of it)
 ```
 
 **The habit: detect, don't pattern-match.** One call answers it from any depth:
@@ -59,7 +71,7 @@ Three ways this bites, all observed:
 - **A path can read like a subdirectory and be a branch.** `firmware/FEATURE_FOO` looks like
   "a subdir of the firmware repo" and is actually "the `FEATURE_FOO` branch checkout". So
   citations under it are relative to a **repo root**, not to a subdirectory.
-- **The reverse also happens.** `private/scripts` genuinely *is* a subdirectory of the `private`
+- **The reverse also happens.** `wiki/scripts` genuinely *is* a subdirectory of the `wiki`
   repo, so that repo may carry unrelated changes in other subtrees — stage explicit paths when
   committing there, never `git add -A`.
 

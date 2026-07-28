@@ -56,28 +56,28 @@ Caveats:
   machine file either; see its section below.)
 
 Full investigation writeup (probes, findings, design rationale):
-`~/proj/private/claude-machine-local-settings.md`.
+`claude-machine-local-settings.md` in the private notes repo.
 
 ## The ripgrep `-r` guard: self-adapting, synced
 
 The PreToolUse guard that denies ripgrep's short `-r` (it means `--replace`,
 not recursive) lives in the synced `settings.json` as one self-adapting hook
-command: it execs the Rust build
-(`~/proj/private/src/rg_replace_guard/target/release/rg_replace_guard`) when
-that binary exists, else runs the python prefilter against the synced
+command: it execs the Rust build installed at `~/.local/bin/rg_replace_guard`
+when that binary exists, else runs the python prefilter against the synced
 `hooks/rg_replace_guard.py`. Consequences:
 
 - **Fresh machine: the python guard is active immediately** after yadm
   sync/bootstrap — no setup; python3 is the only requirement (~2 ms common
   case, ~27 ms when a command mentions rg).
-- **Upgrading a machine to the Rust engine is just a build**: clone private,
-  `cargo build --release` in `src/rg_replace_guard/`. The hook probes the
-  path on every call and switches over by itself (~1.6 ms flat). No
-  settings change; `settings.machine.json` is not involved.
+- **Upgrading a machine to the Rust engine is one command**: in the private
+  notes repo, `make install` in `src/rg_replace_guard/` (installs to
+  `~/.local/bin`). The hook probes the path on every call and switches over
+  by itself (~1.6 ms flat). No settings change; `settings.machine.json` is
+  not involved.
 - The guard covers every launch (wrapper, IDE, SDK, direct binary) because
   it rides the user-tier settings, not the machine file.
 - Deny messages end with a bracket tag naming the engine that fired —
-  `[hook: ~/proj/private/src/rg_replace_guard]` (Rust) vs `[hook:
+  `[hook: ~/.local/bin/rg_replace_guard]` (Rust) vs `[hook:
   ~/.claude/hooks/rg_replace_guard.py]` (python) — so it is always
   observable which one is running.
 
@@ -85,5 +85,5 @@ A pure exec-form wiring (0.7 ms; hook entry in `settings.machine.json`,
 synced settings hook-free) was used briefly on 2026-07-28 and retired the
 same day: it leaves a freshly synced machine — and any wrapper-bypassing
 launch — with no guard at all (both verified). The ~0.9 ms/call saving was
-judged not worth that. It remains documented in
-`private/src/rg_replace_guard/README.md` alongside the other wirings.
+judged not worth that. It remains documented in the guard project's
+README (private notes repo) alongside the other wirings.

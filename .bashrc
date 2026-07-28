@@ -320,7 +320,7 @@ ssh() {
 ### machine file win, env merges per-variable, permission arrays accumulate,
 ### and hooks from BOTH files run (so never define the same hook in both).
 ### Shell launches only; IDE/SDK launches bypass this function. Details:
-### ~/.claude/README.md; investigation: private/claude-machine-local-settings.md
+### ~/.claude/README.md; investigation writeup in the private notes repo.
 claude() {
     local machine="$HOME/.claude/settings.machine.json"
     if [[ -f "$machine" ]]; then
