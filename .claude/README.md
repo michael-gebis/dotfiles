@@ -51,50 +51,39 @@ Caveats:
   bypass it.
 - If you need to pass your own `--settings` for an experiment, call
   `command claude --settings <file> ...` to avoid stacking two flags.
-- Setting up a new machine: the wrapper itself needs nothing (it no-ops
-  until a `settings.machine.json` exists) — but the ripgrep guard DOES
-  need setup: create that file with one of the entries from the guard
-  section below, or the machine runs with no guard at all.
+- Setting up a new machine: nothing to do — the wrapper no-ops until a
+  `settings.machine.json` is created there. (The ripgrep guard needs no
+  machine file either; see its section below.)
 
 Full investigation writeup (probes, findings, design rationale):
 `~/proj/private/claude-machine-local-settings.md`.
 
-## The ripgrep `-r` guard: wired per machine
+## The ripgrep `-r` guard: self-adapting, synced
 
 The PreToolUse guard that denies ripgrep's short `-r` (it means `--replace`,
-not recursive) is deliberately NOT in the synced `settings.json`: the fast
-engine is a locally-built binary, and hooks merge across tiers, so a synced
-entry would run *in addition to* the machine one. Each machine instead
-carries exactly one entry in its `settings.machine.json`:
+not recursive) lives in the synced `settings.json` as one self-adapting hook
+command: it execs the Rust build
+(`~/proj/private/src/rg_replace_guard/target/release/rg_replace_guard`) when
+that binary exists, else runs the python prefilter against the synced
+`hooks/rg_replace_guard.py`. Consequences:
 
-**Machine with the Rust build** (~0.7 ms/call, exec form — no shell; build
-once with `cargo build --release` in `private/src/rg_replace_guard/`):
+- **Fresh machine: the python guard is active immediately** after yadm
+  sync/bootstrap — no setup; python3 is the only requirement (~2 ms common
+  case, ~27 ms when a command mentions rg).
+- **Upgrading a machine to the Rust engine is just a build**: clone private,
+  `cargo build --release` in `src/rg_replace_guard/`. The hook probes the
+  path on every call and switches over by itself (~1.6 ms flat). No
+  settings change; `settings.machine.json` is not involved.
+- The guard covers every launch (wrapper, IDE, SDK, direct binary) because
+  it rides the user-tier settings, not the machine file.
+- Deny messages end with a bracket tag naming the engine that fired —
+  `[hook: ~/proj/private/src/rg_replace_guard]` (Rust) vs `[hook:
+  ~/.claude/hooks/rg_replace_guard.py]` (python) — so it is always
+  observable which one is running.
 
-```json
-"hooks": { "PreToolUse": [ { "matcher": "Bash", "hooks": [ {
-  "type": "command",
-  "command": "/home/mgebis/proj/private/src/rg_replace_guard/target/release/rg_replace_guard",
-  "args": [], "timeout": 10 } ] } ] }
-```
-
-**Machine without it** (~2 ms common case; needs only python3 — the script
-is synced in `hooks/`, so this works on any machine as-is):
-
-```json
-"hooks": { "PreToolUse": [ { "matcher": "Bash", "hooks": [ {
-  "type": "command",
-  "command": "payload=$(cat); case \"$payload\" in *rg*) printf '%s' \"$payload\" | python3 \"$HOME/.claude/hooks/rg_replace_guard.py\";; esac",
-  "timeout": 10 } ] } ] }
-```
-
-Caveats of this arrangement (accepted for speed, 2026-07-28):
-
-- The guard exists only where a `settings.machine.json` entry exists. A
-  freshly synced machine is UNGUARDED until its entry is added.
-- The machine file loads via the `claude()` wrapper, so launches that
-  bypass the shell function (IDE extensions, SDK, exec'ing the binary
-  directly) run without the guard — verified empirically. If either
-  caveat starts to matter, the alternatives are: move the entry to
-  `/etc/claude-code/managed-settings.json` (machine-local AND loads for
-  every launch; needs sudo), or revert to the self-adapting synced
-  command documented in `private/src/rg_replace_guard/README.md`.
+A pure exec-form wiring (0.7 ms; hook entry in `settings.machine.json`,
+synced settings hook-free) was used briefly on 2026-07-28 and retired the
+same day: it leaves a freshly synced machine — and any wrapper-bypassing
+launch — with no guard at all (both verified). The ~0.9 ms/call saving was
+judged not worth that. It remains documented in
+`private/src/rg_replace_guard/README.md` alongside the other wirings.
