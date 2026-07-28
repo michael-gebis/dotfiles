@@ -11,5 +11,19 @@
   },
   "tui": "fullscreen",
   "skipWorkflowUsageWarning": true,
-  "skipAutoPermissionPrompt": true
+  "skipAutoPermissionPrompt": true,
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "payload=$(cat); case \"$payload\" in *rg*) printf '%s' \"$payload\" | python3 \"$HOME/.claude/hooks/rg_replace_guard.py\";; esac",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
 }
